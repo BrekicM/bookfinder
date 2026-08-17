@@ -27,3 +27,7 @@ _Avoid_: "Carried by", "listed at" (these describe catalog presence, not Availab
 **Genre**:
 One of a fixed, curated set of categories used to group and browse Books: Fiction, Fantasy, Sci-Fi, Mystery/Thriller, Romance, Non-Fiction, Young Adult, Children's, Programming/Tech. Not derived dynamically from any external data source's taxonomy.
 _Avoid_: Category, Tag, Subject
+
+**Wishlist**:
+A persisted set of Books the user has saved to look up again later, identified the same way as everywhere else (title+author, deduplicated). The app is single-user with no accounts, so there is exactly one Wishlist, stored locally rather than cached — unlike Popularity/catalog data, it never expires or gets refetched.
+_Avoid_: Favorites, Saved, Cart (there's no purchase flow — this app only checks availability elsewhere)

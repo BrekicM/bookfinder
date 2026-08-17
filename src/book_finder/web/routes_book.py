@@ -5,9 +5,11 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from book_finder.config import settings
 from book_finder.domain.models import Book
 from book_finder.stores.base import safe_find_editions
 from book_finder.stores.registry import ACTIVE_CLIENTS
+from book_finder.wishlist.storage import is_in_wishlist
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/book_finder/web/templates")
@@ -24,6 +26,10 @@ async def book_detail(request: Request, title: str, author: str = "") -> HTMLRes
             *(safe_find_editions(client, book, http_client) for client in ACTIVE_CLIENTS)
         )
 
+    in_wishlist = is_in_wishlist(settings.wishlist_file, book)
+
     return templates.TemplateResponse(
-        request, "book_detail.html", {"book": book, "results": results}
+        request,
+        "book_detail.html",
+        {"book": book, "results": results, "in_wishlist": in_wishlist},
     )

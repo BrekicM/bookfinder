@@ -11,6 +11,7 @@ wheels/
 
 # Runtime cache and local secrets
 /cache/
+/data/
 .env
 
 # Personal/local Claude Code settings (machine-specific permission grants)
