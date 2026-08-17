@@ -1,3 +1,4 @@
+import asyncio
 import json
 from urllib.parse import quote
 
@@ -7,14 +8,22 @@ from book_finder.domain.models import Availability, Book, Bookstore, Edition
 from book_finder.stores.base import BookstoreClient, matches_book
 from book_finder.stores.slugify import slugify
 
-SEARCH_URL = "https://delfi.rs/api/pc-frontend-api/search/quick-search-products/Sve kategorije/{query}"
+SEARCH_URL = "https://delfi.rs/api/pc-frontend-api/search/quick-search-products/{category}/{query}"
+
+# The unscoped "Sve kategorije" (all categories) search is capped at a
+# handful of results ranked across Delfi's whole catalog, so for a
+# franchise with heavily-stocked merchandise (mugs, stickers, plushies...)
+# actual books can be crowded out entirely. Scoping to these two book
+# categories (found by probing the endpoint's own category segment)
+# returns real books instead. See ADR 0004's "Update" section.
+BOOK_CATEGORIES = ("Knjiga", "Strana knjiga")
 
 
-def build_search_url(query: str) -> str:
+def build_search_url(query: str, category: str = "Sve kategorije") -> str:
     # quote(..., safe="") also encodes "/", which appears in real titles
     # (omnibus editions like "A / B / C") and would otherwise be read as
     # extra path segments by Delfi's path-based search endpoint, 404ing.
-    return SEARCH_URL.format(query=quote(query, safe=""))
+    return SEARCH_URL.format(category=quote(category, safe=""), query=quote(query, safe=""))
 
 
 def parse_search_results(raw_json: str) -> list[Edition]:
@@ -50,6 +59,33 @@ def parse_search_results(raw_json: str) -> list[Edition]:
     return editions
 
 
+async def fetch_book_editions(query: str, http_client: httpx.AsyncClient) -> list[Edition]:
+    """Search across BOOK_CATEGORIES and merge, deduping by product URL.
+
+    A single "Sve kategorije" (all categories) search is capped and ranked
+    across Delfi's whole catalog, so for a heavily-merchandised franchise
+    (mugs, stickers, plushies...) real books can be crowded out of the
+    results entirely — searching the book categories directly avoids that.
+    """
+    responses = await asyncio.gather(
+        *(
+            http_client.get(build_search_url(query, category=category), timeout=8.0)
+            for category in BOOK_CATEGORIES
+        )
+    )
+
+    editions: list[Edition] = []
+    seen_urls: set[str] = set()
+    for response in responses:
+        response.raise_for_status()
+        for edition in parse_search_results(response.text):
+            if edition.url not in seen_urls:
+                seen_urls.add(edition.url)
+                editions.append(edition)
+
+    return editions
+
+
 class DelfiClient(BookstoreClient):
     """Unlike Laguna/Vulkan, Delfi has a real internal search API — found by
     capturing the live site's own network requests (its search box calls
@@ -64,11 +100,7 @@ class DelfiClient(BookstoreClient):
         raise NotImplementedError("DelfiClient overrides find_editions() directly")
 
     async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
-        url = build_search_url(book.title)
-        response = await http_client.get(url, timeout=8.0)
-        response.raise_for_status()
-
-        candidates = parse_search_results(response.text)
+        candidates = await fetch_book_editions(book.title, http_client)
         return [
             edition
             for edition in candidates

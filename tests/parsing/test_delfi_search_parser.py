@@ -75,3 +75,13 @@ def test_build_search_url_encodes_slashes_in_the_query() -> None:
 def test_build_search_url_encodes_spaces() -> None:
     url = build_search_url("Na meni je")
     assert url.endswith("Na%20meni%20je")
+
+
+def test_build_search_url_defaults_to_all_categories() -> None:
+    url = build_search_url("hobit")
+    assert "/Sve%20kategorije/hobit" in url
+
+
+def test_build_search_url_accepts_a_specific_category() -> None:
+    url = build_search_url("hobit", category="Knjiga")
+    assert "/Knjiga/hobit" in url

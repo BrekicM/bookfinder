@@ -36,3 +36,53 @@ async def test_find_editions_excludes_matched_but_out_of_stock_results() -> None
     # Same ADR 0002 rule as Laguna/Vulkan: an out-of-stock match must look
     # identical to no match at all, not surface with a null price.
     assert editions == []
+
+
+_KNJIGA_RESPONSE = json.dumps(
+    {
+        "data": {
+            "results": [
+                {
+                    "oldProductId": 1,
+                    "title": "Hobit",
+                    "authors": [{"authorName": "Dzon Ronald Rejel Tolkin"}],
+                    "isAvailable": True,
+                    "priceList": {"regularDiscountPrice": 1000},
+                    "cover": "Mek",
+                }
+            ]
+        }
+    }
+)
+_EMPTY_RESPONSE = json.dumps({"data": {"results": []}})
+
+
+@pytest.mark.asyncio
+async def test_find_editions_searches_the_book_categories_not_all_categories() -> None:
+    # The unscoped "Sve kategorije" search is capped and can be crowded out
+    # entirely by merchandise (mugs, stickers...) for a heavily-merchandised
+    # franchise, hiding real books. find_editions() must search the two book
+    # categories specifically, not the all-categories endpoint.
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/Knjiga/" in str(request.url):
+            return httpx.Response(200, text=_KNJIGA_RESPONSE)
+        return httpx.Response(200, text=_EMPTY_RESPONSE)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        book = Book(title="Hobit", author="Dzon Ronald Rejel Tolkin")
+        editions = await DelfiClient().find_editions(book, http_client)
+
+    assert len(editions) == 1
+    assert editions[0].book.title == "Hobit"
+
+
+@pytest.mark.asyncio
+async def test_find_editions_dedupes_the_same_product_found_in_both_categories() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=_KNJIGA_RESPONSE)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        book = Book(title="Hobit", author="Dzon Ronald Rejel Tolkin")
+        editions = await DelfiClient().find_editions(book, http_client)
+
+    assert len(editions) == 1
