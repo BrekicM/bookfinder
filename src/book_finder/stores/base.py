@@ -7,7 +7,7 @@ from typing import Literal
 import httpx
 
 from book_finder.config import settings
-from book_finder.domain.models import Book, Edition
+from book_finder.domain.models import Availability, Book, Edition
 from book_finder.popularity.cache import read_cache, read_stale, write_cache
 from book_finder.stores.sitemap import parse_sitemap_urls
 from book_finder.stores.slugify import slugify
@@ -115,6 +115,10 @@ class BookstoreClient(ABC):
 
             edition = self._parse_product_page(response.text)
             if edition is None:
+                continue
+            if edition.availability != Availability.AVAILABLE:
+                # ADR 0002: a matched-but-out-of-stock Edition must look
+                # identical to no match at all, not surface with a null price.
                 continue
             if matches_book(
                 candidate_title=edition.book.title,

@@ -64,7 +64,8 @@ class DelfiClient(BookstoreClient):
         return [
             edition
             for edition in candidates
-            if matches_book(
+            if edition.availability == Availability.AVAILABLE
+            and matches_book(
                 candidate_title=edition.book.title,
                 candidate_author=edition.book.author,
                 book=book,
