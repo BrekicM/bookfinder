@@ -82,3 +82,38 @@ async def test_find_editions_excludes_matched_but_out_of_stock_editions(tmp_path
     # "not available" result — an out-of-stock match must look identical to
     # no match at all (empty list), not appear in the list with a null price.
     assert editions == []
+
+
+@pytest.mark.asyncio
+async def test_search_titles_returns_book_even_when_out_of_stock(tmp_path, monkeypatch) -> None:
+    # search_titles() is for free-text search discovery, not availability —
+    # a Book must be findable even if currently out of stock everywhere
+    # (see CONTEXT.md: Availability is a property of an Edition, not a Book).
+    from book_finder import config
+
+    monkeypatch.setattr(config.settings, "cache_dir", tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "sitemap" in str(request.url):
+            return httpx.Response(200, text=_SITEMAP_XML)
+        return httpx.Response(200, text="<html>irrelevant, _parse_product_page is fixed</html>")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await _MatchesButOutOfStockClient().search_titles("matching title", http_client)
+
+    assert books == [Book(title="Matching Title", author="Some Author")]
+
+
+@pytest.mark.asyncio
+async def test_search_titles_returns_empty_when_nothing_shortlisted(tmp_path, monkeypatch) -> None:
+    from book_finder import config
+
+    monkeypatch.setattr(config.settings, "cache_dir", tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=_SITEMAP_XML)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await _MatchesButOutOfStockClient().search_titles("nothing like it", http_client)
+
+    assert books == []

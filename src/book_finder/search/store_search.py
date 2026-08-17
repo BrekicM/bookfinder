@@ -1,16 +1,20 @@
 import httpx
 
-from book_finder.domain.models import Edition
+from book_finder.domain.models import Book, Edition
 from book_finder.stores.delfi import build_search_url, parse_search_results
 
 
 def editions_to_search_dicts(editions: list[Edition]) -> list[dict]:
+    return books_to_search_dicts([edition.book for edition in editions])
+
+
+def books_to_search_dicts(books: list[Book]) -> list[dict]:
     return [
         {
-            "title": edition.book.title,
-            "author_name": [edition.book.author] if edition.book.author else [],
+            "title": book.title,
+            "author_name": [book.author] if book.author else [],
         }
-        for edition in editions
+        for book in books
     ]
 
 

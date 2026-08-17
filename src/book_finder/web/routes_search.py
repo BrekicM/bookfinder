@@ -9,7 +9,9 @@ from fastapi.templating import Jinja2Templates
 
 from book_finder.search.open_library_search import search_open_library
 from book_finder.search.resolver import resolve
-from book_finder.search.store_search import search_delfi_books
+from book_finder.search.store_search import books_to_search_dicts, search_delfi_books
+from book_finder.stores.base import BookstoreClient
+from book_finder.stores.registry import CATALOG_SEARCH_CLIENTS
 
 router = APIRouter()
 templates = Jinja2Templates(directory="src/book_finder/web/templates")
@@ -22,15 +24,29 @@ async def _safe(source: Awaitable[list[dict]]) -> list[dict]:
         return []
 
 
+async def _safe_catalog_search(
+    client: BookstoreClient, query: str, http_client: httpx.AsyncClient
+) -> list[dict]:
+    try:
+        books = await client.search_titles(query, http_client)
+    except httpx.HTTPError:
+        return []
+    return books_to_search_dicts(books)
+
+
 @router.get("/search", response_model=None)
 async def search(request: Request, q: str) -> HTMLResponse | RedirectResponse:
     async with httpx.AsyncClient() as http_client:
-        open_library_results, delfi_results = await asyncio.gather(
+        results = await asyncio.gather(
             _safe(search_open_library(q, http_client)),
             _safe(search_delfi_books(q, http_client)),
+            *(
+                _safe_catalog_search(client, q, http_client)
+                for client in CATALOG_SEARCH_CLIENTS
+            ),
         )
 
-    combined = open_library_results + delfi_results
+    combined = [result for source_results in results for result in source_results]
 
     async def combined_search(query: str) -> list[dict]:
         return combined

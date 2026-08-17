@@ -1,5 +1,8 @@
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
-from book_finder.search.store_search import editions_to_search_dicts
+from book_finder.search.store_search import (
+    books_to_search_dicts,
+    editions_to_search_dicts,
+)
 
 
 def test_empty_list_returns_empty() -> None:
@@ -31,3 +34,14 @@ def test_edition_with_no_author_omits_author_name() -> None:
     )
 
     assert editions_to_search_dicts([edition]) == [{"title": "No Author Book", "author_name": []}]
+
+
+def test_books_to_search_dicts_empty_list_returns_empty() -> None:
+    assert books_to_search_dicts([]) == []
+
+
+def test_books_to_search_dicts_includes_author() -> None:
+    book = Book(title="Leto bez muskaraca", author="Siri Hustvedt")
+    assert books_to_search_dicts([book]) == [
+        {"title": "Leto bez muskaraca", "author_name": ["Siri Hustvedt"]}
+    ]

@@ -129,6 +129,34 @@ class BookstoreClient(ABC):
 
         return editions
 
+    async def search_titles(self, query: str, http_client: httpx.AsyncClient) -> list[Book]:
+        """Free-text search discovery against this store's cached catalog.
+
+        Unlike find_editions(), results are not filtered by Availability — a
+        Book is discoverable by search even when currently out of stock
+        everywhere; only the /books live-check page cares about stock status.
+        """
+        catalog = await self._get_catalog(http_client)
+        candidates = shortlist_candidates(Book(title=query, author=""), catalog)[
+            :MAX_CANDIDATES_TO_FETCH
+        ]
+
+        books = []
+        for url in candidates:
+            try:
+                response = await http_client.get(
+                    url, timeout=settings.store_request_timeout_seconds
+                )
+                response.raise_for_status()
+            except httpx.HTTPError:
+                continue
+
+            edition = self._parse_product_page(response.text)
+            if edition is not None:
+                books.append(edition.book)
+
+        return books
+
 
 @dataclass
 class StoreCheckResult:
