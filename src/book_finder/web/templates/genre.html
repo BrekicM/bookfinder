@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ genre.value }} — Book Finder</title>
+    <style>
+        body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        nav a { text-decoration: none; color: #555; }
+        .columns { display: flex; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; }
+        .column { flex: 1; min-width: 280px; }
+        ol { padding-left: 1.2rem; }
+        li { margin: 0.4rem 0; }
+        li a { text-decoration: none; font-weight: bold; }
+        .author { color: #555; font-weight: normal; }
+        .unavailable { color: #555; font-style: italic; }
+    </style>
+</head>
+<body>
+    <nav><a href="/">&larr; Home</a></nav>
+    <h1>{{ genre.value }}</h1>
+
+    <div class="columns">
+        <div class="column">
+            <h2>Global</h2>
+            {% if global_list.available and global_list.entries %}
+            <ol>
+                {% for entry in global_list.entries %}
+                <li>
+                    <a href="/books?title={{ entry.book.title | urlencode }}&author={{ entry.book.author | urlencode }}">{{ entry.book.title }}</a>
+                    {% if entry.book.author %}<span class="author"> — {{ entry.book.author }}</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="unavailable">No Global data for this genre right now.</p>
+            {% endif %}
+        </div>
+
+        <div class="column">
+            <h2>Serbian</h2>
+            {% if serbian_list.available and serbian_list.entries %}
+            <ol>
+                {% for entry in serbian_list.entries %}
+                <li>
+                    <a href="/books?title={{ entry.book.title | urlencode }}&author={{ entry.book.author | urlencode }}">{{ entry.book.title }}</a>
+                    {% if entry.book.author %}<span class="author"> — {{ entry.book.author }}</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="unavailable">No Serbian bestseller data for this genre.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
