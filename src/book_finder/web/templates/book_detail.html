@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ book.title }} — Book Finder</title>
+    <style>
+        body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+        h1 { margin-bottom: 0.2rem; }
+        .author { color: #555; margin-top: 0; }
+        .store { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin: 1rem 0; }
+        .available { color: #146c2e; font-weight: bold; }
+        .not-available { color: #8a1f1f; }
+        .failed { color: #a05a00; font-style: italic; }
+        .price { font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+    <h1>{{ book.title }}</h1>
+    <p class="author">{{ book.author }}</p>
+
+    {% for result in results %}
+    <div class="store">
+        <h2>{{ result.bookstore }}</h2>
+        {% if result.status == "ok" %}
+            {% if result.editions %}
+                {% for edition in result.editions %}
+                <div>
+                    <span class="available">Available</span>
+                    — <span class="price">{{ "%.0f"|format(edition.price_rsd) }} RSD</span>
+                    — {{ edition.language }}
+                    {% if edition.format_label %}— {{ edition.format_label }}{% endif %}
+                    — <a href="{{ edition.url }}" target="_blank">view</a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="not-available">Not available</p>
+            {% endif %}
+        {% else %}
+            <p class="failed">Check failed ({{ result.status }})</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</body>
+</html>

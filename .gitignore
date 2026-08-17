@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Runtime cache and local secrets
+/cache/
+.env
+
+# Personal/local Claude Code settings (machine-specific permission grants)
+.claude/settings.local.json
+
