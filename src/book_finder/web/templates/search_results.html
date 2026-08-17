@@ -1,29 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Search: {{ query }} — Book Finder</title>
-    <style>
-        body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
-        .candidate { border: 1px solid #ddd; border-radius: 6px; padding: 0.75rem 1rem; margin: 0.75rem 0; }
-        .candidate a { text-decoration: none; font-weight: bold; }
-        .candidate .author { color: #555; }
-        .empty { color: #555; font-style: italic; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Search: {{ query }} — Book Finder{% endblock %}
+{% block content %}
     <h1>Search results for "{{ query }}"</h1>
 
     {% if candidates %}
         <p>Multiple matches — which one did you mean?</p>
         {% for book in candidates %}
-        <div class="candidate">
+        <div class="card candidate">
             <a href="/books?title={{ book.title | urlencode }}&author={{ book.author | urlencode }}">{{ book.title }}</a>
             <div class="author">{{ book.author }}</div>
         </div>
         {% endfor %}
     {% else %}
-        <p class="empty">No matches found.</p>
+        <p class="status-empty">No matches found.</p>
     {% endif %}
-</body>
-</html>
+{% endblock %}

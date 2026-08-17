@@ -1,22 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>{{ genre.value }} — Book Finder</title>
-    <style>
-        body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-        nav a { text-decoration: none; color: #555; }
-        .columns { display: flex; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; }
-        .column { flex: 1; min-width: 280px; }
-        ol { padding-left: 1.2rem; }
-        li { margin: 0.4rem 0; }
-        li a { text-decoration: none; font-weight: bold; }
-        .author { color: #555; font-weight: normal; }
-        .unavailable { color: #555; font-style: italic; }
-    </style>
-</head>
-<body>
-    <nav><a href="/">&larr; Home</a></nav>
+{% extends "base.html" %}
+{% block title %}{{ genre.value }} — Book Finder{% endblock %}
+{% block content %}
     <h1>{{ genre.value }}</h1>
 
     <div class="columns">
@@ -32,7 +16,7 @@
                 {% endfor %}
             </ol>
             {% else %}
-            <p class="unavailable">No Global data for this genre right now.</p>
+            <p class="status-empty">No Global data for this genre right now.</p>
             {% endif %}
         </div>
 
@@ -48,9 +32,8 @@
                 {% endfor %}
             </ol>
             {% else %}
-            <p class="unavailable">No Serbian bestseller data for this genre.</p>
+            <p class="status-empty">No Serbian bestseller data for this genre.</p>
             {% endif %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

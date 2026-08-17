@@ -8,10 +8,10 @@ for the key design decisions.
 
 ## Status
 
-MVP in progress. Currently working: live per-book availability/price checks
-across both stores, with catalog-based matching (neither store exposes a
-real search API). Not yet built: genre browsing, free-text search, and a
-homepage — see the plan history for the full roadmap.
+MVP complete: browse the 9 fixed genres (Global popularity via Open Library,
+Serbian bestseller data via Laguna + Vulkan where available), free-text
+search with disambiguation, and live per-book availability/price/language
+checks across both stores. Delfi is deferred post-MVP (see ADR 0003).
 
 ## Run it
 
@@ -20,11 +20,7 @@ uv sync
 uv run uvicorn book_finder.main:app --port 8123
 ```
 
-Then, since there's no homepage yet, hit the book-detail route directly:
-
-```
-http://127.0.0.1:8123/books?title=Kosingas 2: Bezdanj&author=Aleksandar Tesic
-```
+Then open http://127.0.0.1:8123/
 
 ## Test
 
