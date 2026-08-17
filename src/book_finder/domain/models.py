@@ -24,10 +24,11 @@ class Genre(str, Enum):
 
 
 class Bookstore(str, Enum):
-    """MVP store set. Delfi (deferred, see ADR 0003) is added here — and nowhere else — when it ships."""
+    """The Serbian retailers the app checks. See ADR 0004 for Delfi's late addition."""
 
     LAGUNA = "Laguna"
     VULKAN = "Vulkan"
+    DELFI = "Delfi"
 
 
 class Availability(str, Enum):

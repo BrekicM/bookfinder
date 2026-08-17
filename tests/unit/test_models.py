@@ -5,8 +5,9 @@ def test_genre_has_exactly_nine_members() -> None:
     assert len(Genre) == 9
 
 
-def test_bookstore_has_exactly_two_members() -> None:
-    assert len(Bookstore) == 2
+def test_bookstore_has_exactly_three_members() -> None:
+    # Delfi added per ADR 0004 (superseding ADR 0003's headless-browser assumption)
+    assert len(Bookstore) == 3
 
 
 def test_availability_has_exactly_two_states() -> None:

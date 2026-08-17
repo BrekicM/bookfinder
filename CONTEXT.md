@@ -13,7 +13,7 @@ A specific listing of a Book at one Bookstore — carries its own price, languag
 _Avoid_: Listing, Product, Copy
 
 **Bookstore**:
-One of the Serbian retailers the app checks for Editions. MVP set: Laguna, Vulkan. Delfi is the first planned post-MVP addition (see ADR 0003).
+One of the Serbian retailers the app checks for Editions: Laguna, Vulkan, Delfi (see ADR 0004 — Delfi was briefly deferred by ADR 0003, then added once a real search API was found).
 _Avoid_: Store, Retailer, Shop
 
 **Popularity**:
