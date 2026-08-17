@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from book_finder.domain.models import Availability, Bookstore
-from book_finder.stores.delfi import parse_search_results
+from book_finder.stores.delfi import build_search_url, parse_search_results
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -60,3 +60,18 @@ def test_parses_out_of_stock_result_with_no_price() -> None:
 def test_skips_results_missing_required_fields() -> None:
     data = {"data": {"results": [{"title": "No ID Here"}]}}
     assert parse_search_results(json.dumps(data)) == []
+
+
+def test_build_search_url_encodes_slashes_in_the_query() -> None:
+    # A title containing "/" (e.g. an omnibus edition) must not be split into
+    # extra URL path segments — Delfi's search endpoint takes the query as a
+    # raw path segment, not a query-string parameter.
+    url = build_search_url("The Crystal Shard / Streams of Silver")
+
+    assert "/Streams" not in url
+    assert "%2F" in url
+
+
+def test_build_search_url_encodes_spaces() -> None:
+    url = build_search_url("Na meni je")
+    assert url.endswith("Na%20meni%20je")

@@ -1,4 +1,5 @@
 import json
+from urllib.parse import quote
 
 import httpx
 
@@ -7,6 +8,13 @@ from book_finder.stores.base import BookstoreClient, matches_book
 from book_finder.stores.slugify import slugify
 
 SEARCH_URL = "https://delfi.rs/api/pc-frontend-api/search/quick-search-products/Sve kategorije/{query}"
+
+
+def build_search_url(query: str) -> str:
+    # quote(..., safe="") also encodes "/", which appears in real titles
+    # (omnibus editions like "A / B / C") and would otherwise be read as
+    # extra path segments by Delfi's path-based search endpoint, 404ing.
+    return SEARCH_URL.format(query=quote(query, safe=""))
 
 
 def parse_search_results(raw_json: str) -> list[Edition]:
@@ -56,7 +64,7 @@ class DelfiClient(BookstoreClient):
         raise NotImplementedError("DelfiClient overrides find_editions() directly")
 
     async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
-        url = SEARCH_URL.format(query=book.title)
+        url = build_search_url(book.title)
         response = await http_client.get(url, timeout=8.0)
         response.raise_for_status()
 
