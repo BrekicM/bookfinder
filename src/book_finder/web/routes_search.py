@@ -38,14 +38,18 @@ async def _safe_catalog_search(
 async def search(request: Request, q: str) -> HTMLResponse | RedirectResponse:
     async with httpx.AsyncClient() as http_client:
         results = await asyncio.gather(
-            _safe(search_open_library(q, http_client)),
             _safe(search_delfi_books(q, http_client)),
             *(
                 _safe_catalog_search(client, q, http_client)
                 for client in CATALOG_SEARCH_CLIENTS
             ),
+            _safe(search_open_library(q, http_client)),
         )
 
+    # Store-native results (purchasable in Serbia, this app's core purpose)
+    # go first so they survive resolve()'s MAX_CANDIDATES truncation — Open
+    # Library alone can return more than that for an internationally popular
+    # title, in editions/translations that aren't actually buyable here.
     combined = [result for source_results in results for result in source_results]
 
     async def combined_search(query: str) -> list[dict]:

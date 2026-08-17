@@ -69,3 +69,18 @@ async def test_results_missing_author_are_skipped_not_crashed_on() -> None:
 
     assert resolution.kind == "single"
     assert resolution.book.author == ""
+
+
+@pytest.mark.asyncio
+async def test_truncation_keeps_the_earliest_distinct_results() -> None:
+    # For an internationally famous title, Open Library alone can return more
+    # than MAX_CANDIDATES distinct editions/translations. Whoever the caller
+    # puts first in the results list survives truncation — this is why
+    # routes_search.py orders Serbian-bookstore results ahead of Open
+    # Library's: a purchasable-in-Serbia match must not be crowded out.
+    results = [{"title": f"Edition {i}", "author_name": ["Author"]} for i in range(15)]
+    resolution = await resolve("popular book", _fake_search(results))
+
+    assert resolution.kind == "ambiguous"
+    titles = [c.title for c in resolution.candidates]
+    assert titles == [f"Edition {i}" for i in range(10)]
