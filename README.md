@@ -1,7 +1,7 @@
 # Book Finder
 
 Finds the most popular books by genre and checks live in-stock availability,
-price, and edition language across Serbian bookstores (Laguna, Vulkan).
+price, and edition language across Serbian bookstores (Laguna, Vulkan, Delfi).
 
 See [CONTEXT.md](CONTEXT.md) for the domain model and [docs/adr/](docs/adr/)
 for the key design decisions.
@@ -11,7 +11,8 @@ for the key design decisions.
 MVP complete: browse the 9 fixed genres (Global popularity via Open Library,
 Serbian bestseller data via Laguna + Vulkan where available), free-text
 search with disambiguation, and live per-book availability/price/language
-checks across both stores. Delfi is deferred post-MVP (see ADR 0003).
+checks across all three stores (see ADR 0004 for how Delfi was added post-MVP).
+A wishlist lets you save book titles/authors locally and revisit them later.
 
 ## Run it
 
