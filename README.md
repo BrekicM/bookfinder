@@ -10,9 +10,11 @@ for the key design decisions.
 
 MVP complete: browse the 9 fixed genres (Global popularity via Open Library,
 Serbian bestseller data via Laguna + Vulkan where available), free-text
-search with disambiguation, and live per-book availability/price/language
-checks across all three stores (see ADR 0004 for how Delfi was added post-MVP).
-A wishlist lets you save book titles/authors locally and revisit them later.
+search with disambiguation (merging Open Library with all three bookstores'
+own catalogs, so domestic-only titles are still findable), and live per-book
+availability/price/language checks across all three stores (see ADR 0004 for
+how Delfi was added post-MVP). A wishlist lets you save book titles/authors
+locally and revisit them later.
 
 ## Run it
 
