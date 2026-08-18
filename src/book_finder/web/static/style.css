@@ -1,95 +1,193 @@
 :root {
-    --text: #1a1a1a;
-    --muted: #5a6169;
-    --border: #e0e0e0;
-    --bg-card: #fafafa;
-    --available: #146c2e;
-    --not-available: #8a1f1f;
-    --failed: #a05a00;
-    --link: #1a4d8f;
+    --bg: #faf5e9;
+    --bg-card: #fffdf7;
+    --text: #2b2620;
+    --muted: #746b58;
+    --border: #ddd2b8;
+    --accent: #2f5233;
+    --accent-contrast: #ffffff;
+    --link: #2f5233;
+    --available: #2f6b3c;
+    --not-available: #8a3324;
+    --failed: #7a6a4a;
+
+    --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1c1a15;
+        --bg-card: #26231b;
+        --text: #f1ead9;
+        --muted: #b3a88f;
+        --border: #3c3728;
+        --accent: #79b787;
+        --accent-contrast: #182018;
+        --link: #79b787;
+        --available: #79b787;
+        --not-available: #e0997e;
+        --failed: #c9b48f;
+    }
 }
 
 * { box-sizing: border-box; }
 
 body {
-    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-sans);
     color: var(--text);
+    background: var(--bg);
     max-width: 900px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-    line-height: 1.5;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 3rem;
+    line-height: 1.55;
 }
 
-h1 { margin-bottom: 0.2rem; }
-h2 { margin-top: 0; }
+a { color: var(--link); }
 
-nav.top { margin-bottom: 1.5rem; display: flex; gap: 1rem; }
-nav.top a { text-decoration: none; color: var(--muted); }
-nav.top a:hover { color: var(--link); }
+h1, h2 { font-family: var(--font-serif); font-weight: 700; }
+h1 { margin: 0.6rem 0 0.2rem; font-size: 1.9rem; }
+h2 { margin-top: 0; font-size: 1.3rem; }
+
+nav.top {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    align-items: center;
+}
+nav.top a {
+    text-decoration: none;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.75rem;
+}
+nav.top a.brand { font-family: var(--font-serif); font-weight: 700; color: var(--text); }
+nav.top a:hover { color: var(--accent); }
+
+.icon { flex-shrink: 0; }
+.icon-large { width: 2.5rem; height: 2.5rem; }
 
 .author { color: var(--muted); }
 
-form.search { margin: 1.5rem 0; }
+form.search {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 1.5rem 0;
+}
 form.search input[type="text"] {
-    width: 65%;
-    padding: 0.6rem 0.8rem;
+    flex: 1 1 220px;
+    min-height: 2.75rem;
+    padding: 0.6rem 0.9rem;
     font-size: 1rem;
+    font-family: var(--font-sans);
     border: 1px solid var(--border);
-    border-radius: 6px;
-}
-form.search button {
-    padding: 0.6rem 1.1rem;
-    font-size: 1rem;
-    border: 1px solid var(--link);
-    background: var(--link);
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.genres { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.genres a {
-    display: block;
-    padding: 0.5rem 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    text-decoration: none;
+    border-radius: 8px;
+    background: var(--bg-card);
     color: var(--text);
 }
-.genres a:hover { background: var(--bg-card); }
+form.search button {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-contrast);
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.genres { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.genres a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--bg-card);
+    font-family: var(--font-serif);
+}
+.genres a:hover { border-color: var(--accent); color: var(--accent); }
 
 .columns { display: flex; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; }
-.column { flex: 1; min-width: 280px; }
+.column { flex: 1 1 320px; min-width: 0; }
 
 ol { padding-left: 1.2rem; }
-li { margin: 0.4rem 0; }
-li a, .candidate a { text-decoration: none; font-weight: bold; color: var(--link); }
+li { margin: 0.5rem 0; }
+li a, .candidate a {
+    text-decoration: none;
+    font-weight: bold;
+    font-family: var(--font-serif);
+    color: var(--link);
+}
 li a:hover, .candidate a:hover { text-decoration: underline; }
 
 .card {
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 1rem 1.25rem;
     margin: 1rem 0;
     background: var(--bg-card);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+.status-available,
+.status-not-available,
+.status-failed,
+.status-empty {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
 .status-available { color: var(--available); font-weight: bold; }
 .status-not-available { color: var(--not-available); }
 .status-failed { color: var(--failed); font-style: italic; }
 .status-empty { color: var(--muted); font-style: italic; }
 
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--muted);
+}
+
 .price { font-size: 1.15rem; font-weight: 600; }
 
 button {
-    padding: 0.45rem 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
     font-size: 0.95rem;
-    border: 1px solid var(--link);
-    background: white;
-    color: var(--link);
-    border-radius: 6px;
+    font-family: var(--font-sans);
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    border-radius: 8px;
     cursor: pointer;
 }
 button:hover { background: var(--bg-card); }
 
 .candidate form { margin-top: 0.6rem; }
+
+@media (max-width: 600px) {
+    body { padding: 1rem 0.85rem 3rem; }
+    form.search input[type="text"] { flex-basis: 100%; }
+    .column { flex-basis: 100%; }
+}

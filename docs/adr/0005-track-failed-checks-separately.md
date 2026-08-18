@@ -1,0 +1,3 @@
+# Failed availability checks are a distinct state, not "not available"
+
+ADR 0002 collapses the *reason* a book isn't purchasable (never carried vs. temporarily out of stock) into one "not available" result. That's a different question from whether the live check itself succeeded. When a Bookstore's check errors out (e.g. it doesn't respond), the app hasn't determined the book is unavailable — it simply doesn't know. Conflating "checked and it's not there" with "couldn't check" would lose information a user might act on differently (e.g. retry later). The two are tracked and surfaced as separate outcomes.

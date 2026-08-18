@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "_icons.html" import search %}
 {% block title %}Book Finder{% endblock %}
 {% block content %}
     <h1>Book Finder</h1>
 
     <form class="search" action="/search" method="get">
         <input type="text" name="q" placeholder="Search by title or author" required>
-        <button type="submit">Search</button>
+        <button type="submit">{{ search() }} Search</button>
     </form>
 
     <h2>Browse by genre</h2>

@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Book Finder{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <nav class="top">
-        <a href="/">&larr; Book Finder</a>
-        <a href="/wishlist">Wishlist</a>
+        <a href="/" class="brand">&larr; Book Finder</a>
+        <a href="/wishlist">{% from "_icons.html" import bookmark %}{{ bookmark(filled=true) }} Wishlist</a>
     </nav>
     {% block content %}{% endblock %}
 </body>

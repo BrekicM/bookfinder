@@ -21,7 +21,7 @@ The ranking signal used to sort Books within a Genre, computed independently as 
 _Avoid_: Ranking, Rating (a Rating is one possible input to Global Popularity, not the concept itself)
 
 **Availability**:
-Whether a Bookstore currently has an Edition in stock, checked live at the moment of the query (not cached) — not merely whether the store carries the title at all. The app does not distinguish *why* an Edition is unavailable (never carried vs. temporarily out of stock); both surface as a single "not available" result. This is the app's core purpose: finding books that can actually be bought right now.
+Whether a Bookstore currently has an Edition in stock, checked live at the moment of the query (not cached) — not merely whether the store carries the title at all. The app does not distinguish *why* an Edition is unavailable (never carried vs. temporarily out of stock); both surface as a single "not available" result (see ADR 0002). Separately, a live check can also **fail** to complete (e.g. the store didn't respond) — this is a third, distinct outcome from "not available": it means the app couldn't determine Availability at all, not that it determined the book isn't there (see ADR 0005). This is the app's core purpose: finding books that can actually be bought right now.
 _Avoid_: "Carried by", "listed at" (these describe catalog presence, not Availability)
 
 **Genre**:
