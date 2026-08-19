@@ -1,7 +1,7 @@
 import httpx
 
 from book_finder.domain.models import Book, Edition
-from book_finder.stores.booka import fetch_search_results
+from book_finder.stores.booka import search_books as search_booka_editions
 from book_finder.stores.delfi import fetch_book_editions
 
 
@@ -25,5 +25,5 @@ async def search_delfi_books(query: str, http_client: httpx.AsyncClient) -> list
 
 
 async def search_booka_books(query: str, http_client: httpx.AsyncClient) -> list[dict]:
-    editions = await fetch_search_results(query, http_client)
+    editions = await search_booka_editions(query, http_client)
     return editions_to_search_dicts(editions)

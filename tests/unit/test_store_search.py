@@ -55,13 +55,28 @@ def test_books_to_search_dicts_includes_author() -> None:
     ]
 
 
+def _booka_handler(*, search_body=None, product_body=None, pisac_body=None):
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if "wc/store/v1/products" in url:
+            return httpx.Response(
+                200, text=json.dumps(search_body if search_body is not None else [])
+            )
+        if "wp/v2/product" in url:
+            return httpx.Response(
+                200, text=json.dumps(product_body if product_body is not None else [])
+            )
+        if "wp/v2/pisac" in url:
+            return httpx.Response(
+                200, text=json.dumps(pisac_body if pisac_body is not None else {})
+            )
+        return httpx.Response(404)
+
+    return handler
+
+
 @pytest.mark.asyncio
-async def test_search_booka_books_returns_search_dicts_without_resolving_author() -> (
-    None
-):
-    # Discovery search (unlike find_editions) never resolves author — it's
-    # a raw pass-through of the search endpoint's own results, same as
-    # search_delfi_books.
+async def test_search_booka_books_resolves_author_for_matching_title() -> None:
     search_result = [
         {
             "name": "Brana na Atlantiku",
@@ -72,11 +87,49 @@ async def test_search_booka_books_returns_search_dicts_without_resolving_author(
             "attributes": [],
         }
     ]
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, text=json.dumps(search_result))
+    handler = _booka_handler(
+        search_body=search_result,
+        product_body=[{"pisac": [215]}],
+        pisac_body={"name": "Frederik Begbede"},
+    )
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         results = await search_booka_books("Brana na Atlantiku", http_client)
 
-    assert results == [{"title": "Brana na Atlantiku", "author_name": []}]
+    assert results == [
+        {"title": "Brana na Atlantiku", "author_name": ["Frederik Begbede"]}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_search_booka_books_excludes_titles_unrelated_to_the_query() -> None:
+    search_result = [
+        {
+            "name": "Brana na Atlantiku",
+            "permalink": "https://booka.rs/knjige/savremena-knjizevnost/brana-na-atlantiku/",
+            "is_in_stock": True,
+            "is_purchasable": True,
+            "prices": {"price": "89100", "currency_minor_unit": 2},
+            "attributes": [],
+        },
+        {
+            "name": "The Facts of Destruction",
+            "permalink": "https://booka.rs/knjige/eseji/the-facts-of-destruction/",
+            "is_in_stock": True,
+            "is_purchasable": True,
+            "prices": {"price": "150000", "currency_minor_unit": 2},
+            "attributes": [],
+        },
+    ]
+    handler = _booka_handler(
+        search_body=search_result,
+        product_body=[{"pisac": [215]}],
+        pisac_body={"name": "Frederik Begbede"},
+    )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        results = await search_booka_books("Brana na Atlantiku", http_client)
+
+    assert results == [
+        {"title": "Brana na Atlantiku", "author_name": ["Frederik Begbede"]}
+    ]
