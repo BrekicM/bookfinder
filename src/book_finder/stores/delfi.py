@@ -102,7 +102,11 @@ async def search_books(query: str, http_client: httpx.AsyncClient) -> list[Editi
     return [
         edition
         for edition in candidates
-        if matches_query(candidate_title=edition.book.title, query=query)
+        if matches_query(
+            candidate_title=edition.book.title,
+            query=query,
+            candidate_author=edition.book.author,
+        )
     ]
 
 

@@ -80,6 +80,38 @@ async def test_search_titles_excludes_titles_unrelated_to_the_query() -> None:
     assert books == []
 
 
+_AUTHOR_QUERY_RESPONSE = json.dumps(
+    {
+        "data": {
+            "results": [
+                {
+                    "oldProductId": 3,
+                    "title": "21 zlatna poluga",
+                    "authors": [{"authorName": "Nenad Gugl"}],
+                    "isAvailable": True,
+                    "priceList": {"regularDiscountPrice": 1200},
+                    "cover": "Mek",
+                }
+            ]
+        }
+    }
+)
+
+
+@pytest.mark.asyncio
+async def test_search_titles_finds_a_book_by_author_query_with_no_title_overlap() -> None:
+    # Delfi's own search API correctly matches by author; the app's
+    # relevance filter must not throw that hit away just because the query
+    # text isn't in the title.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=_AUTHOR_QUERY_RESPONSE)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await DelfiClient().search_titles("Nenad Gugl", http_client)
+
+    assert books == [Book(title="21 zlatna poluga", author="Nenad Gugl")]
+
+
 _KNJIGA_RESPONSE = json.dumps(
     {
         "data": {

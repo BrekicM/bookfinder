@@ -83,6 +83,28 @@ def test_blank_query_matches_nothing() -> None:
     assert matches_query(candidate_title="1984", query="") is False
 
 
+def test_query_matches_candidate_author_when_title_does_not_overlap() -> None:
+    # A free-text search can legitimately be an author's name, not a title
+    # fragment — the store's own search API matches it correctly, and this
+    # filter must not throw that hit away.
+    assert matches_query(
+        candidate_title="21 zlatna poluga", query="Nenad Gugl", candidate_author="Nenad Gugl"
+    )
+
+
+def test_query_matches_candidate_author_surname_only() -> None:
+    assert matches_query(
+        candidate_title="21 zlatna poluga", query="Gugl", candidate_author="Nenad Gugl"
+    )
+
+
+def test_query_still_rejects_candidate_matching_neither_title_nor_author() -> None:
+    assert (
+        matches_query(candidate_title="Animal Farm", query="1984", candidate_author="George Orwell")
+        is False
+    )
+
+
 CATALOG = [
     "https://laguna.rs/proizvodi/knjige/urgum-sekiras/",
     "https://laguna.rs/proizvodi/knjige/mesecev-tigar/",
