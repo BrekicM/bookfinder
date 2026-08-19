@@ -95,6 +95,37 @@ async def fetch_search_results(
     return parse_search_results(response.text)
 
 
+async def search_books(query: str, http_client: httpx.AsyncClient) -> list[Edition]:
+    """Free-text search discovery, filtered to the query and author-resolved.
+
+    Booka's search endpoint does its own fuzzy matching and returns hits
+    with little to no textual overlap with the query, and never includes
+    author inline (see parse_search_item). Unlike find_editions(), this
+    doesn't gate on Availability — a book should stay discoverable via
+    search even when out of stock (mirrors BookstoreClient.search_titles).
+    """
+    candidates = await fetch_search_results(query, http_client)
+    query_book = Book(title=query, author="")
+
+    matched = [
+        edition
+        for edition in candidates
+        if matches_book(
+            candidate_title=edition.book.title, candidate_author="", book=query_book
+        )
+    ]
+
+    editions = []
+    for edition in matched:
+        author = await resolve_author(_slug_from_url(edition.url), http_client)
+        editions.append(
+            edition.model_copy(
+                update={"book": Book(title=edition.book.title, author=author)}
+            )
+        )
+    return editions
+
+
 def _slug_from_url(url: str) -> str:
     return url.rstrip("/").rsplit("/", 1)[-1]
 
