@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 from book_finder.domain.models import Book
@@ -12,8 +13,23 @@ def list_books(path: Path) -> list[Book]:
 
 
 def _write(path: Path, books: list[Book]) -> None:
+    """Replace the wishlist file atomically.
+
+    The wishlist is user data with no upstream to refetch from, so it is never
+    truncated in place: the new contents go to a temp file in the same
+    directory (same filesystem, so the rename is atomic) and only then replace
+    the target. A crash or full disk leaves the previous wishlist intact.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps([b.model_dump() for b in books]), encoding="utf-8")
+    tmp_path = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        tmp_path.write_text(
+            json.dumps([b.model_dump() for b in books]), encoding="utf-8"
+        )
+        os.replace(tmp_path, path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
 
 def add_book(path: Path, book: Book) -> None:

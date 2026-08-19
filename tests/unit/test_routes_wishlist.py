@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from book_finder.config import settings
@@ -41,9 +42,50 @@ def test_add_redirects_to_the_given_next_url(tmp_path, monkeypatch) -> None:
 
     response = client.post(
         "/wishlist/add",
-        data={"title": "1984", "author": "George Orwell", "next": "/books?title=1984&author=George+Orwell"},
+        data={
+            "title": "1984",
+            "author": "George Orwell",
+            "next": "/books?title=1984&author=George+Orwell",
+        },
         follow_redirects=False,
     )
 
     assert response.status_code == 303
     assert response.headers["location"] == "/books?title=1984&author=George+Orwell"
+
+
+OFF_SITE_TARGETS = [
+    "https://evil.example.com/phish",
+    "//evil.example.com",
+    "/\\evil.example.com",
+    "\\\\evil.example.com",
+    "books?title=1984",
+]
+
+
+@pytest.mark.parametrize("target", OFF_SITE_TARGETS)
+def test_add_refuses_to_redirect_off_site(target, tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
+
+    response = client.post(
+        "/wishlist/add",
+        data={"title": "1984", "author": "George Orwell", "next": target},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/wishlist"
+
+
+@pytest.mark.parametrize("target", OFF_SITE_TARGETS)
+def test_remove_refuses_to_redirect_off_site(target, tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
+
+    response = client.post(
+        "/wishlist/remove",
+        data={"title": "1984", "author": "George Orwell", "next": target},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/wishlist"
