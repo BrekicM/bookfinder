@@ -180,8 +180,17 @@ class BookaClient(BookstoreClient):
 
     bookstore = Bookstore.BOOKA.value
 
-    def _parse_product_page(self, html: str) -> Edition | None:
-        raise NotImplementedError("BookaClient overrides find_editions() directly")
+    async def search_titles(
+        self, query: str, http_client: httpx.AsyncClient
+    ) -> list[Book]:
+        """Free-text search discovery via Booka's own search API.
+
+        Unlike find_editions(), results are not filtered by Availability — a
+        Book stays discoverable via search even when out of stock (ADR 0002).
+        Author is resolved per matching candidate, as search_books() does.
+        """
+        editions = await search_books(query, http_client)
+        return [edition.book for edition in editions]
 
     async def find_editions(
         self, book: Book, http_client: httpx.AsyncClient

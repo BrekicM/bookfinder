@@ -38,6 +38,48 @@ async def test_find_editions_excludes_matched_but_out_of_stock_results() -> None
     assert editions == []
 
 
+@pytest.mark.asyncio
+async def test_search_titles_returns_book_even_when_out_of_stock() -> None:
+    # search_titles() is discovery, not an availability check — a Book stays
+    # findable when out of stock, unlike find_editions() (ADR 0002).
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=_OUT_OF_STOCK_RESPONSE)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await DelfiClient().search_titles("Matching Title", http_client)
+
+    assert books == [Book(title="Matching Title", author="Some Author")]
+
+
+_UNRELATED_RESPONSE = json.dumps(
+    {
+        "data": {
+            "results": [
+                {
+                    "oldProductId": 2,
+                    "title": "The Facts of Destruction",
+                    "authors": [{"authorName": "Rostislav Kocourek"}],
+                    "isAvailable": True,
+                    "priceList": {"regularDiscountPrice": 1000},
+                    "cover": "Mek",
+                }
+            ]
+        }
+    }
+)
+
+
+@pytest.mark.asyncio
+async def test_search_titles_excludes_titles_unrelated_to_the_query() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=_UNRELATED_RESPONSE)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await DelfiClient().search_titles("Malo zivota", http_client)
+
+    assert books == []
+
+
 _KNJIGA_RESPONSE = json.dumps(
     {
         "data": {
@@ -77,7 +119,9 @@ async def test_find_editions_searches_the_book_categories_not_all_categories() -
 
 
 @pytest.mark.asyncio
-async def test_find_editions_dedupes_the_same_product_found_in_both_categories() -> None:
+async def test_find_editions_dedupes_the_same_product_found_in_both_categories() -> (
+    None
+):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, text=_KNJIGA_RESPONSE)
 

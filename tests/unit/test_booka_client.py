@@ -67,6 +67,50 @@ async def test_find_editions_excludes_matched_but_out_of_stock_results() -> None
 
 
 @pytest.mark.asyncio
+async def test_search_titles_returns_book_even_when_out_of_stock() -> None:
+    # search_titles() is discovery, not an availability check — a Book stays
+    # findable when out of stock, unlike find_editions() (ADR 0002).
+    handler = _handler(
+        search_body=[_OUT_OF_STOCK_RESULT],
+        product_body=_PRODUCT_RESPONSE,
+        pisac_body=_PISAC_RESPONSE,
+    )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await BookaClient().search_titles("Matching Title", http_client)
+
+    assert books == [Book(title="Matching Title", author="Frederik Begbede")]
+
+
+@pytest.mark.asyncio
+async def test_search_titles_resolves_author_per_candidate() -> None:
+    handler = _handler(
+        search_body=[_SEARCH_RESULT],
+        product_body=_PRODUCT_RESPONSE,
+        pisac_body=_PISAC_RESPONSE,
+    )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await BookaClient().search_titles("Brana na Atlantiku", http_client)
+
+    assert books == [Book(title="Brana na Atlantiku", author="Frederik Begbede")]
+
+
+@pytest.mark.asyncio
+async def test_search_titles_excludes_titles_unrelated_to_the_query() -> None:
+    handler = _handler(
+        search_body=[_SEARCH_RESULT],
+        product_body=_PRODUCT_RESPONSE,
+        pisac_body=_PISAC_RESPONSE,
+    )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await BookaClient().search_titles("Nothing Like It", http_client)
+
+    assert books == []
+
+
+@pytest.mark.asyncio
 async def test_find_editions_resolves_author_before_final_match() -> None:
     handler = _handler(
         search_body=[_SEARCH_RESULT],
