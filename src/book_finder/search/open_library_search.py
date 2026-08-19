@@ -1,5 +1,6 @@
 import httpx
 
+from book_finder.config import settings
 from book_finder.domain.models import Book
 from book_finder.stores.base import matches_book
 
@@ -21,7 +22,7 @@ async def search_open_library(query: str, http_client: httpx.AsyncClient) -> lis
             "fields": "title,author_name,first_publish_year",
             "limit": 20,
         },
-        timeout=8.0,
+        timeout=settings.store_request_timeout_seconds,
     )
     response.raise_for_status()
     docs = response.json().get("docs", [])

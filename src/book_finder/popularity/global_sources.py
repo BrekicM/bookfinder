@@ -1,5 +1,6 @@
 import httpx
 
+from book_finder.config import settings
 from book_finder.domain.models import Book, Genre, PopularityEntry
 
 GENRE_SUBJECTS: dict[Genre, str] = {
@@ -40,7 +41,7 @@ async def fetch_global_popularity(
     response = await http_client.get(
         f"https://openlibrary.org/subjects/{subject}.json",
         params={"limit": RESULTS_PER_GENRE},
-        timeout=8.0,
+        timeout=settings.store_request_timeout_seconds,
     )
     response.raise_for_status()
     return build_entries(response.json().get("works", []))
