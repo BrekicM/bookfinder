@@ -1,12 +1,9 @@
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
 from book_finder.domain.models import Book
 
 MAX_CANDIDATES = 10
-
-SearchFn = Callable[[str], Awaitable[list[dict]]]
 
 
 @dataclass
@@ -25,9 +22,13 @@ def _book_from_result(result: dict) -> Book | None:
     return Book(title=title, author=author)
 
 
-async def resolve(query: str, search: SearchFn) -> SearchResolution:
-    raw_results = await search(query)
+def resolve(raw_results: list[dict]) -> SearchResolution:
+    """Collapse already-fetched search results into one Book, several, or none.
 
+    Fetching is the caller's job: results come from several sources whose
+    order matters (store-native results first, so they survive the
+    MAX_CANDIDATES truncation), and only the caller knows that order.
+    """
     distinct: dict[tuple[str, str], Book] = {}
     for result in raw_results:
         book = _book_from_result(result)
