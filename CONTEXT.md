@@ -13,7 +13,7 @@ A specific listing of a Book at one Bookstore — carries its own price, languag
 _Avoid_: Listing, Product, Copy
 
 **Bookstore**:
-One of the Serbian retailers the app checks for Editions: Laguna, Vulkan, Delfi (see ADR 0004 — Delfi was briefly deferred by ADR 0003, then added once a real search API was found).
+One of the Serbian retailers the app checks for Editions: Laguna, Vulkan, Delfi, Booka (see ADR 0004 — Delfi was briefly deferred by ADR 0003, then added once a real search API was found; see ADR 0009 for Booka). Dereta was evaluated and excluded — see ADR 0008.
 _Avoid_: Store, Retailer, Shop
 
 **Popularity**:
@@ -35,3 +35,7 @@ _Avoid_: Locale (there is no region/currency/date-format variation here, only a 
 **Wishlist**:
 A persisted set of Books the user has saved to look up again later, identified the same way as everywhere else (title+author, deduplicated). The app is single-user with no accounts, so there is exactly one Wishlist, stored locally rather than cached — unlike Popularity/catalog data, it never expires or gets refetched.
 _Avoid_: Favorites, Saved, Cart (there's no purchase flow — this app only checks availability elsewhere)
+
+**Script**:
+Whether a physical Edition is printed in Latin or Cyrillic characters — a property of that one Edition, not of the Book, and independent of the Edition's Language (a Serbian-language edition can be printed in either script). Currently only Booka publishes this per-Edition; other Bookstores leave it unknown rather than guessed.
+_Avoid_: Alphabet (Script is the established Serbian-context term); do not confuse with Language, which is the UI's own display language and unrelated to how a printed book is set
