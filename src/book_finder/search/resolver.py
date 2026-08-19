@@ -3,7 +3,7 @@ from typing import Literal
 
 from book_finder.domain.models import Book
 
-MAX_CANDIDATES = 10
+MAX_CANDIDATES = 25
 
 
 @dataclass

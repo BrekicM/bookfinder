@@ -62,9 +62,9 @@ def test_truncation_keeps_the_earliest_distinct_results() -> None:
     # puts first in the results list survives truncation — this is why
     # routes_search.py orders Serbian-bookstore results ahead of Open
     # Library's: a purchasable-in-Serbia match must not be crowded out.
-    results = [{"title": f"Edition {i}", "author_name": ["Author"]} for i in range(15)]
+    results = [{"title": f"Edition {i}", "author_name": ["Author"]} for i in range(30)]
     resolution = resolve(results)
 
     assert resolution.kind == "ambiguous"
     titles = [c.title for c in resolution.candidates]
-    assert titles == [f"Edition {i}" for i in range(10)]
+    assert titles == [f"Edition {i}" for i in range(25)]
