@@ -1,13 +1,36 @@
-from book_finder.domain.models import Availability, Book, Bookstore, Genre
+from book_finder.domain.models import Availability, Book, Bookstore, Edition, Genre
 
 
 def test_genre_has_exactly_nine_members() -> None:
     assert len(Genre) == 9
 
 
-def test_bookstore_has_exactly_three_members() -> None:
-    # Delfi added per ADR 0004 (superseding ADR 0003's headless-browser assumption)
-    assert len(Bookstore) == 3
+def test_bookstore_has_exactly_four_members() -> None:
+    # Delfi added per ADR 0004; Booka added per ADR 0009.
+    assert len(Bookstore) == 4
+
+
+def test_edition_script_defaults_to_none() -> None:
+    edition = Edition(
+        book=Book(title="1984", author="George Orwell"),
+        bookstore=Bookstore.LAGUNA,
+        availability=Availability.AVAILABLE,
+        language="Serbian",
+        url="https://example.com/x",
+    )
+    assert edition.script is None
+
+
+def test_edition_script_can_be_set() -> None:
+    edition = Edition(
+        book=Book(title="1984", author="George Orwell"),
+        bookstore=Bookstore.BOOKA,
+        availability=Availability.AVAILABLE,
+        language="Serbian",
+        script="Latin",
+        url="https://booka.rs/knjige/x",
+    )
+    assert edition.script == "Latin"
 
 
 def test_availability_has_exactly_two_states() -> None:

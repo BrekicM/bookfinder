@@ -8,7 +8,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from book_finder.search.open_library_search import search_open_library
 from book_finder.search.resolver import resolve
-from book_finder.search.store_search import books_to_search_dicts, search_delfi_books
+from book_finder.search.store_search import (
+    books_to_search_dicts,
+    search_booka_books,
+    search_delfi_books,
+)
 from book_finder.stores.base import BookstoreClient
 from book_finder.stores.registry import CATALOG_SEARCH_CLIENTS
 from book_finder.web.render import render
@@ -38,6 +42,7 @@ async def search(request: Request, q: str) -> HTMLResponse | RedirectResponse:
     async with httpx.AsyncClient() as http_client:
         results = await asyncio.gather(
             _safe(search_delfi_books(q, http_client)),
+            _safe(search_booka_books(q, http_client)),
             *(
                 _safe_catalog_search(client, q, http_client)
                 for client in CATALOG_SEARCH_CLIENTS

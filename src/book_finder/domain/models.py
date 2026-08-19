@@ -29,6 +29,7 @@ class Bookstore(str, Enum):
     LAGUNA = "Laguna"
     VULKAN = "Vulkan"
     DELFI = "Delfi"
+    BOOKA = "Booka"
 
 
 class Availability(str, Enum):
@@ -57,6 +58,7 @@ class Edition(BaseModel):
     price_rsd: float | None = None
     language: str
     format_label: str | None = None
+    script: str | None = None
     url: str
 
 
