@@ -27,6 +27,24 @@ def _find_product_block(blocks: list[dict]) -> dict | None:
     return None
 
 
+def _is_book_department(blocks: list[dict]) -> bool:
+    # Vulkan's catalog mixes books with merch (board games, mugs, keychains,
+    # book lights, etc.) under the same sitemap. The breadcrumb's top-level
+    # department (index 2, after "Knjižare Vulkan" and "Proizvodi") is the
+    # only reliable signal: books sit under "DOMAĆE KNJIGE" / "ENGLISH BOOKS",
+    # while merch sits under "GIFT" / "DRUŠTVENE IGRE" / etc, even when the
+    # product name itself contains "knjige" (e.g. a "lampica za knjige").
+    for block in blocks:
+        if block.get("@type") != "BreadcrumbList":
+            continue
+        items = block.get("itemListElement", [])
+        if len(items) < 3:
+            continue
+        department = items[2].get("name", "")
+        return "knjig" in department.lower() or "book" in department.lower()
+    return False
+
+
 def _author_name(html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
     link = soup.select_one("a.author-name")
@@ -45,6 +63,8 @@ def parse_product_page(html: str) -> Edition | None:
     blocks = _ld_json_blocks(html)
     product_block = _find_product_block(blocks)
     if product_block is None:
+        return None
+    if not _is_book_department(blocks):
         return None
 
     title = product_block.get("name", "")

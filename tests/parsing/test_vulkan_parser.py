@@ -35,3 +35,9 @@ def test_parses_in_stock_english_product() -> None:
     assert edition.price_rsd == 3740.0
     assert edition.book.author == "Adam Nayman"
     assert edition.language == "English"
+
+
+def test_rejects_non_book_merchandise() -> None:
+    edition = parse_product_page(_load("vulkan_product_non_book_board_game.html"))
+
+    assert edition is None
