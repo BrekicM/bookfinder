@@ -6,6 +6,7 @@ import httpx
 
 from book_finder.config import settings
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
+from book_finder.stores.base import BookstoreClient, matches_book
 
 SEARCH_URL = "https://booka.rs/wp-json/wc/store/v1/products?search={query}"
 PRODUCT_URL = "https://booka.rs/wp-json/wp/v2/product?slug={slug}"
@@ -89,4 +90,89 @@ async def fetch_search_results(query: str, http_client: httpx.AsyncClient) -> li
     response.raise_for_status()
     return parse_search_results(response.text)
 
+
+def _slug_from_url(url: str) -> str:
+    return url.rstrip("/").rsplit("/", 1)[-1]
+
+
+async def resolve_author(slug: str, http_client: httpx.AsyncClient) -> str:
+    """Two-step author lookup: product -> pisac term id -> pisac name.
+
+    Returns "" on any failure (network error, no product, no pisac terms) —
+    callers must treat that as "author unknown", never as "any author
+    matches" (that fallback is only valid for stores with no author data at
+    all, e.g. Delfi/Vulkan; Booka does have author data, so a failed lookup
+    here is a real gap, not the store's design).
+    """
+    try:
+        response = await http_client.get(
+            PRODUCT_URL.format(slug=slug), timeout=settings.store_request_timeout_seconds
+        )
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return ""
+
+    products = response.json()
+    if not products:
+        return ""
+
+    pisac_ids = products[0].get("pisac") or []
+    if not pisac_ids:
+        return ""
+
+    try:
+        author_response = await http_client.get(
+            PISAC_URL.format(term_id=pisac_ids[0]),
+            timeout=settings.store_request_timeout_seconds,
+        )
+        author_response.raise_for_status()
+    except httpx.HTTPError:
+        return ""
+
+    name = author_response.json().get("name", "")
+    return html.unescape(name) if name else ""
+
+
+class BookaClient(BookstoreClient):
+    """Booka exposes a documented WooCommerce Store API search endpoint, used
+    directly (like DelfiClient), rather than the sitemap-and-shortlist base.
+    See ADR 0009. Author isn't inline in the search response, so it's
+    resolved in a second (and third) call, but only for candidates that
+    already match on title — resolving every raw search hit's author would
+    be wasteful and unnecessary.
+    """
+
+    bookstore = Bookstore.BOOKA.value
+
+    def _parse_product_page(self, html: str) -> Edition | None:
+        raise NotImplementedError("BookaClient overrides find_editions() directly")
+
+    async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
+        candidates = await fetch_search_results(book.title, http_client)
+
+        # Cheap title-only shortlist first. candidate_author="" here means
+        # "author not checked yet", not "any author matches" for the final
+        # result — that distinction is enforced below, before anything is
+        # actually included.
+        shortlisted = [
+            edition
+            for edition in candidates
+            if edition.availability == Availability.AVAILABLE
+            and matches_book(candidate_title=edition.book.title, candidate_author="", book=book)
+        ]
+
+        editions = []
+        for edition in shortlisted:
+            author = await resolve_author(_slug_from_url(edition.url), http_client)
+            if not author and book.author.strip():
+                # Author lookup genuinely failed/unknown and the query cares
+                # about author — do not let matches_book's "no author data"
+                # fallback silently pass this through.
+                continue
+            if matches_book(candidate_title=edition.book.title, candidate_author=author, book=book):
+                editions.append(
+                    edition.model_copy(update={"book": Book(title=edition.book.title, author=author)})
+                )
+
+        return editions
 
