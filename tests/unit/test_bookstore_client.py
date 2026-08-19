@@ -121,3 +121,48 @@ async def test_search_titles_returns_empty_when_nothing_shortlisted(tmp_path, mo
         books = await _MatchesButOutOfStockClient().search_titles("nothing like it", http_client)
 
     assert books == []
+
+
+class _CountsMatchingTitleClient(CatalogBookstoreClient):
+    bookstore = "TestStore"
+    sitemap_url = "https://example.invalid/sitemap.xml"
+    cache_key = "test_counts_matching_title"
+
+    def _parse_product_page(self, html: str) -> Edition | None:
+        return Edition(
+            book=Book(title=f"Matching Title {html}", author="Some Author"),
+            bookstore=Bookstore.LAGUNA,
+            availability=Availability.AVAILABLE,
+            price_rsd=999,
+            language="Serbian",
+            url="https://example.invalid/irrelevant/",
+        )
+
+
+@pytest.mark.asyncio
+async def test_search_titles_fetches_up_to_max_candidates_to_fetch(tmp_path, monkeypatch) -> None:
+    from book_finder import config
+
+    monkeypatch.setattr(config.settings, "cache_dir", tmp_path)
+
+    sitemap_body = "\n".join(
+        f"<url><loc>https://example.invalid/books/matching-title-{i}/</loc></url>"
+        for i in range(30)
+    )
+    sitemap_xml = (
+        '<?xml version="1.0"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{sitemap_body}\n</urlset>"
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "sitemap" in str(request.url):
+            return httpx.Response(200, text=sitemap_xml)
+        return httpx.Response(200, text=str(request.url))
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        books = await _CountsMatchingTitleClient().search_titles("matching title", http_client)
+
+    # 30 candidates are shortlisted from the catalog, but only the first
+    # MAX_CANDIDATES_TO_FETCH get fetched and parsed.
+    assert len(books) == 25

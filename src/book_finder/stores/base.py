@@ -12,7 +12,12 @@ from book_finder.popularity.cache import read_cache, read_stale, write_cache
 from book_finder.stores.sitemap import parse_sitemap_urls
 from book_finder.stores.slugify import slugify
 
-MAX_CANDIDATES_TO_FETCH = 5
+# Kept in step with resolver.MAX_CANDIDATES so Laguna/Vulkan aren't a silent
+# bottleneck relative to stores with a real search API. Since these two have
+# no live search endpoint (see CatalogBookstoreClient docstring), each
+# shortlisted candidate costs one live product-page fetch — raising this
+# trades search latency for completeness.
+MAX_CANDIDATES_TO_FETCH = 25
 
 
 def _normalize_for_matching(text: str) -> str:

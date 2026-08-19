@@ -36,6 +36,14 @@ _Avoid_: Locale (there is no region/currency/date-format variation here, only a 
 A persisted set of Books the user has saved to look up again later, identified the same way as everywhere else (title+author, deduplicated). The app is single-user with no accounts, so there is exactly one Wishlist, stored locally rather than cached — unlike Popularity/catalog data, it never expires or gets refetched.
 _Avoid_: Favorites, Saved, Cart (there's no purchase flow — this app only checks availability elsewhere)
 
+**Search**:
+A free-text query (e.g. "Witcher") the user runs to find a Book, independent of the curated Genre list. Matched against each Bookstore's own search/catalog and against Open Library (used only as a supplementary identity source — it is not a Bookstore and carries no Availability). A Search either resolves straight to one Book, or surfaces multiple Candidates for the user to disambiguate.
+_Avoid_: Lookup, Query (used loosely elsewhere; "Search" is the user-facing free-text action)
+
+**Candidate**:
+A possible Book match surfaced by a Search before the user has picked one to check Availability for. Distinct from Book, which is the resolved, canonical result once a Candidate is chosen. Candidates from Bookstores (purchasable) are shown ahead of Open-Library-only Candidates (bibliographic identification only, not purchasable).
+_Avoid_: Result, Match, Hit (used informally elsewhere; "Candidate" is the pre-disambiguation domain term)
+
 **Script**:
 Whether a physical Edition is printed in Latin or Cyrillic characters — a property of that one Edition, not of the Book, and independent of the Edition's Language (a Serbian-language edition can be printed in either script). Currently only Booka publishes this per-Edition; other Bookstores leave it unknown rather than guessed.
 _Avoid_: Alphabet (Script is the established Serbian-context term); do not confuse with Language, which is the UI's own display language and unrelated to how a printed book is set
