@@ -53,10 +53,7 @@ async def search(
     # title, in editions/translations that aren't actually buyable here.
     combined = [result for source_results in results for result in source_results]
 
-    async def combined_search(query: str) -> list[dict]:
-        return combined
-
-    resolution = await resolve(q, combined_search)
+    resolution = resolve(combined)
 
     if resolution.kind == "single":
         book = resolution.book

@@ -1,5 +1,5 @@
 from book_finder.domain.models import Book
-from book_finder.stores.base import matches_book, shortlist_candidates
+from book_finder.stores.base import matches_book, matches_query, shortlist_candidates
 
 
 def test_no_match_against_blank_candidate_title() -> None:
@@ -62,6 +62,25 @@ def test_matches_when_candidate_title_has_extra_marketing_text() -> None:
         candidate_author="Kjartan Poskit",
         book=book,
     )
+
+
+def test_query_matches_candidate_title_ignoring_author() -> None:
+    # Search discovery has no author to check against — only the free-text query.
+    assert matches_query(candidate_title="1984 - George Orwell", query="1984")
+
+
+def test_query_does_not_match_unrelated_candidate_title() -> None:
+    # Store search APIs do their own fuzzy ranking and return hits with no
+    # textual overlap with the query; those must be filtered out.
+    assert matches_query(candidate_title="Animal Farm", query="1984") is False
+
+
+def test_query_matches_candidate_title_without_diacritics() -> None:
+    assert matches_query(candidate_title="Urgum Sekiraš", query="urgum sekiras")
+
+
+def test_blank_query_matches_nothing() -> None:
+    assert matches_query(candidate_title="1984", query="") is False
 
 
 CATALOG = [

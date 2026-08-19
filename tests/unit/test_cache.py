@@ -32,8 +32,7 @@ def test_read_stale_returns_data_regardless_of_age(tmp_path) -> None:
     now = datetime(2026, 1, 1, tzinfo=UTC)
     write_cache(tmp_path, "key", {"a": 1}, now=now)
 
-    much_later = now + timedelta(days=30)
-    assert read_stale(tmp_path, "key", now=much_later) == {"a": 1}
+    assert read_stale(tmp_path, "key") == {"a": 1}
 
 
 def test_read_stale_returns_none_when_missing(tmp_path) -> None:

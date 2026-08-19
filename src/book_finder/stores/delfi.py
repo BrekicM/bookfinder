@@ -6,7 +6,7 @@ import httpx
 
 from book_finder.config import settings
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
-from book_finder.stores.base import BookstoreClient, matches_book
+from book_finder.stores.base import BookstoreClient, matches_book, matches_query
 from book_finder.stores.slugify import slugify
 
 SEARCH_URL = "https://delfi.rs/api/pc-frontend-api/search/quick-search-products/{category}/{query}"
@@ -99,15 +99,10 @@ async def search_books(query: str, http_client: httpx.AsyncClient) -> list[Editi
     discoverable via search even when out of stock.
     """
     candidates = await fetch_book_editions(query, http_client)
-    query_book = Book(title=query, author="")
     return [
         edition
         for edition in candidates
-        if matches_book(
-            candidate_title=edition.book.title,
-            candidate_author="",
-            book=query_book,
-        )
+        if matches_query(candidate_title=edition.book.title, query=query)
     ]
 
 

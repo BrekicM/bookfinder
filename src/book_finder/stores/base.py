@@ -15,17 +15,22 @@ from book_finder.stores.slugify import slugify
 MAX_CANDIDATES_TO_FETCH = 5
 
 
-def _normalize(text: str) -> str:
-    # Fold diacritics too: a title/author typed without Serbian diacritics
-    # (very common — most keyboards don't have š/č/ć/ž/đ) must still match
-    # the store's own diacritic-correct text.
+def _normalize_for_matching(text: str) -> str:
+    """Normalize whitespace/case AND fold diacritics, for matching only.
+
+    A title/author typed without Serbian diacritics (very common — most
+    keyboards don't have š/č/ć/ž/đ) must still match the store's own
+    diacritic-correct text. This fold is deliberately lossier than
+    Book.identity_key's _normalize_for_identity, which keeps diacritics
+    significant because they distinguish one Book from another.
+    """
     folded = slugify(text).replace("-", " ")
     return re.sub(r"\s+", " ", folded).strip()
 
 
 def matches_book(*, candidate_title: str, candidate_author: str, book: Book) -> bool:
-    candidate_title_norm = _normalize(candidate_title)
-    book_title_norm = _normalize(book.title)
+    candidate_title_norm = _normalize_for_matching(candidate_title)
+    book_title_norm = _normalize_for_matching(book.title)
 
     if not candidate_title_norm or not book_title_norm:
         return False
@@ -35,8 +40,26 @@ def matches_book(*, candidate_title: str, candidate_author: str, book: Book) -> 
     if not candidate_author.strip():
         return True
 
-    surname = _normalize(book.author).split(" ")[-1]
-    return surname in _normalize(candidate_author)
+    surname = _normalize_for_matching(book.author).split(" ")[-1]
+    return surname in _normalize_for_matching(candidate_author)
+
+
+def matches_query(*, candidate_title: str, query: str) -> bool:
+    """Is a search-discovery candidate relevant to the free-text query?
+
+    Title-only relevance, by design: discovery has no Book to match against,
+    only what the user typed, and store search APIs (plus Open Library) do
+    their own fuzzy ranking that surfaces hits with no textual overlap.
+
+    Not a substitute for matches_book(..., candidate_author="") inside
+    find_editions(), where an empty candidate author means "author not
+    resolved yet" and must still be re-checked before a result is kept.
+    """
+    return matches_book(
+        candidate_title=candidate_title,
+        candidate_author="",
+        book=Book(title=query, author=""),
+    )
 
 
 def url_slug(url: str) -> str:

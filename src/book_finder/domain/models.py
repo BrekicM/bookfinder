@@ -5,7 +5,14 @@ from typing import Literal
 from pydantic import BaseModel
 
 
-def _normalize(text: str) -> str:
+def _normalize_for_identity(text: str) -> str:
+    """Collapse whitespace and case only — deliberately NOT diacritic-folding.
+
+    Book identity (wishlist membership, dedup) must keep š/č/ć/ž/đ significant:
+    two Books whose titles differ only by diacritics are still two Books. The
+    lossier fold used to match a Book against a Bookstore's own text lives in
+    stores/base.py as _normalize_for_matching.
+    """
     return re.sub(r"\s+", " ", text).strip().casefold()
 
 
@@ -46,7 +53,7 @@ class Book(BaseModel):
     author: str
 
     def identity_key(self) -> tuple[str, str]:
-        return (_normalize(self.title), _normalize(self.author))
+        return (_normalize_for_identity(self.title), _normalize_for_identity(self.author))
 
 
 class Edition(BaseModel):
