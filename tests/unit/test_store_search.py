@@ -39,7 +39,9 @@ def test_edition_with_no_author_omits_author_name() -> None:
         url="https://delfi.rs/knjige/y.html",
     )
 
-    assert editions_to_search_dicts([edition]) == [{"title": "No Author Book", "author_name": []}]
+    assert editions_to_search_dicts([edition]) == [
+        {"title": "No Author Book", "author_name": []}
+    ]
 
 
 def test_books_to_search_dicts_empty_list_returns_empty() -> None:
@@ -54,7 +56,9 @@ def test_books_to_search_dicts_includes_author() -> None:
 
 
 @pytest.mark.asyncio
-async def test_search_booka_books_returns_search_dicts_without_resolving_author() -> None:
+async def test_search_booka_books_returns_search_dicts_without_resolving_author() -> (
+    None
+):
     # Discovery search (unlike find_editions) never resolves author — it's
     # a raw pass-through of the search endpoint's own results, same as
     # search_delfi_books.

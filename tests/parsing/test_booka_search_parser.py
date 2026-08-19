@@ -32,7 +32,10 @@ def test_parses_real_in_stock_result() -> None:
     assert edition.language == "Serbian"
     assert edition.format_label == "mek"
     assert edition.script == "Latin"
-    assert edition.url == "https://booka.rs/knjige/savremena-knjizevnost/brana-na-atlantiku/"
+    assert (
+        edition.url
+        == "https://booka.rs/knjige/savremena-knjizevnost/brana-na-atlantiku/"
+    )
 
 
 def test_parses_out_of_stock_result_with_no_price() -> None:
