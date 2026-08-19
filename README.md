@@ -94,6 +94,7 @@ Ctrl+C.
 ```bash
 uv run pytest
 uv run ruff check src tests
+uv run ruff format --check src tests
 ```
 
 Optional API keys (`.env`, see `.env.example`) enrich Global popularity data
