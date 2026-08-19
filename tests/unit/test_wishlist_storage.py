@@ -79,9 +79,7 @@ def _crash_partway_through_writes(monkeypatch) -> None:
     monkeypatch.setattr(Path, "write_text", crashing_write_text)
 
 
-def test_a_failed_write_leaves_the_existing_wishlist_intact(
-    tmp_path, monkeypatch
-) -> None:
+def test_a_failed_write_leaves_the_existing_wishlist_intact(tmp_path, monkeypatch) -> None:
     path = tmp_path / "wishlist.json"
     add_book(path, Book(title="1984", author="George Orwell"))
     _crash_partway_through_writes(monkeypatch)
@@ -92,9 +90,7 @@ def test_a_failed_write_leaves_the_existing_wishlist_intact(
     assert list_books(path) == [Book(title="1984", author="George Orwell")]
 
 
-def test_a_failed_write_leaves_no_stray_temp_files_behind(
-    tmp_path, monkeypatch
-) -> None:
+def test_a_failed_write_leaves_no_stray_temp_files_behind(tmp_path, monkeypatch) -> None:
     path = tmp_path / "wishlist.json"
     add_book(path, Book(title="1984", author="George Orwell"))
     _crash_partway_through_writes(monkeypatch)

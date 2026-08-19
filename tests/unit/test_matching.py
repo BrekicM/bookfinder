@@ -35,9 +35,7 @@ def test_does_not_match_different_title() -> None:
 
 def test_does_not_match_different_author_surname() -> None:
     book = Book(title="1984", author="George Orwell")
-    assert (
-        matches_book(candidate_title="1984", candidate_author="Jack London", book=book) is False
-    )
+    assert matches_book(candidate_title="1984", candidate_author="Jack London", book=book) is False
 
 
 def test_matches_when_query_author_lacks_diacritics_store_has_them() -> None:

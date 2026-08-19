@@ -119,9 +119,7 @@ async def test_find_editions_searches_the_book_categories_not_all_categories() -
 
 
 @pytest.mark.asyncio
-async def test_find_editions_dedupes_the_same_product_found_in_both_categories() -> (
-    None
-):
+async def test_find_editions_dedupes_the_same_product_found_in_both_categories() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, text=_KNJIGA_RESPONSE)
 

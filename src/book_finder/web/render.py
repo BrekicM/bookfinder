@@ -27,9 +27,7 @@ def _language_links(request: Request) -> dict[str, str]:
     return links
 
 
-def render(
-    request: Request, template_name: str, context: dict | None = None
-) -> HTMLResponse:
+def render(request: Request, template_name: str, context: dict | None = None) -> HTMLResponse:
     lang = request.state.lang
     full_context = {
         **(context or {}),

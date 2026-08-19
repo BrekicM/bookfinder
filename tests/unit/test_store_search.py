@@ -21,6 +21,4 @@ def test_books_to_search_dicts_includes_author() -> None:
 
 def test_books_to_search_dicts_omits_author_name_when_author_is_unknown() -> None:
     book = Book(title="No Author Book", author="")
-    assert books_to_search_dicts([book]) == [
-        {"title": "No Author Book", "author_name": []}
-    ]
+    assert books_to_search_dicts([book]) == [{"title": "No Author Book", "author_name": []}]

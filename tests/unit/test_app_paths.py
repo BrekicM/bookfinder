@@ -16,9 +16,7 @@ import book_finder
 @pytest.fixture
 def isolated_import(monkeypatch, tmp_path):
     """Import book_finder modules afresh from a working directory that is not the repo root."""
-    saved = {
-        name: mod for name, mod in sys.modules.items() if name.startswith("book_finder")
-    }
+    saved = {name: mod for name, mod in sys.modules.items() if name.startswith("book_finder")}
     for name in saved:
         del sys.modules[name]
     monkeypatch.chdir(tmp_path)

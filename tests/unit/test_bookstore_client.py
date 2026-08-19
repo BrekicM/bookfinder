@@ -76,9 +76,7 @@ async def test_find_editions_excludes_matched_but_out_of_stock_editions(
     def handler(request: httpx.Request) -> httpx.Response:
         if "sitemap" in str(request.url):
             return httpx.Response(200, text=_SITEMAP_XML)
-        return httpx.Response(
-            200, text="<html>irrelevant, _parse_product_page is fixed</html>"
-        )
+        return httpx.Response(200, text="<html>irrelevant, _parse_product_page is fixed</html>")
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         book = Book(title="Matching Title", author="Some Author")
@@ -91,9 +89,7 @@ async def test_find_editions_excludes_matched_but_out_of_stock_editions(
 
 
 @pytest.mark.asyncio
-async def test_search_titles_returns_book_even_when_out_of_stock(
-    tmp_path, monkeypatch
-) -> None:
+async def test_search_titles_returns_book_even_when_out_of_stock(tmp_path, monkeypatch) -> None:
     # search_titles() is for free-text search discovery, not availability —
     # a Book must be findable even if currently out of stock everywhere
     # (see CONTEXT.md: Availability is a property of an Edition, not a Book).
@@ -104,22 +100,16 @@ async def test_search_titles_returns_book_even_when_out_of_stock(
     def handler(request: httpx.Request) -> httpx.Response:
         if "sitemap" in str(request.url):
             return httpx.Response(200, text=_SITEMAP_XML)
-        return httpx.Response(
-            200, text="<html>irrelevant, _parse_product_page is fixed</html>"
-        )
+        return httpx.Response(200, text="<html>irrelevant, _parse_product_page is fixed</html>")
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
-        books = await _MatchesButOutOfStockClient().search_titles(
-            "matching title", http_client
-        )
+        books = await _MatchesButOutOfStockClient().search_titles("matching title", http_client)
 
     assert books == [Book(title="Matching Title", author="Some Author")]
 
 
 @pytest.mark.asyncio
-async def test_search_titles_returns_empty_when_nothing_shortlisted(
-    tmp_path, monkeypatch
-) -> None:
+async def test_search_titles_returns_empty_when_nothing_shortlisted(tmp_path, monkeypatch) -> None:
     from book_finder import config
 
     monkeypatch.setattr(config.settings, "cache_dir", tmp_path)
@@ -128,8 +118,6 @@ async def test_search_titles_returns_empty_when_nothing_shortlisted(
         return httpx.Response(200, text=_SITEMAP_XML)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
-        books = await _MatchesButOutOfStockClient().search_titles(
-            "nothing like it", http_client
-        )
+        books = await _MatchesButOutOfStockClient().search_titles("nothing like it", http_client)
 
     assert books == []

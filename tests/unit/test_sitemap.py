@@ -6,7 +6,9 @@ FIXTURES = Path(__file__).parent.parent / "parsing" / "fixtures"
 
 
 def test_parses_empty_sitemap_returns_empty_list() -> None:
-    xml = '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+    xml = (
+        '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+    )
     assert parse_sitemap_urls(xml) == []
 
 

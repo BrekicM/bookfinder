@@ -39,9 +39,7 @@ async def test_search_open_library_excludes_titles_unrelated_to_the_query() -> N
 @pytest.mark.asyncio
 async def test_search_open_library_returns_empty_when_no_docs_match() -> None:
     response_body = {
-        "docs": [
-            {"title": "Completely Different Book", "author_name": ["Someone Else"]}
-        ]
+        "docs": [{"title": "Completely Different Book", "author_name": ["Someone Else"]}]
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
