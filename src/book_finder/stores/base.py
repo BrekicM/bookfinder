@@ -39,7 +39,8 @@ def matches_book(*, candidate_title: str, candidate_author: str, book: Book) -> 
     return surname in _normalize(candidate_author)
 
 
-def _url_slug(url: str) -> str:
+def url_slug(url: str) -> str:
+    """The trailing path segment of a product URL, ignoring any trailing slash."""
     return url.rstrip("/").rsplit("/", 1)[-1]
 
 
@@ -50,11 +51,47 @@ def shortlist_candidates(book: Book, catalog_urls: list[str]) -> list[str]:
     (Vulkan), so comparison happens in slug space, not on raw candidate pages.
     """
     title_slug = slugify(book.title)
-    return [url for url in catalog_urls if title_slug in slugify(_url_slug(url))]
+    return [url for url in catalog_urls if title_slug in slugify(url_slug(url))]
 
 
 class BookstoreClient(ABC):
     """Checks one Bookstore for Editions of a Book.
+
+    The narrow contract every Bookstore satisfies, however it talks to its
+    store: a live Availability check (find_editions) and free-text discovery
+    (search_titles). Stores with a real search API (Delfi, Booka) implement
+    both directly; stores without one (Laguna, Vulkan) inherit the
+    sitemap-catalog implementations from CatalogBookstoreClient.
+    """
+
+    bookstore: str
+
+    @abstractmethod
+    async def find_editions(
+        self, book: Book, http_client: httpx.AsyncClient
+    ) -> list[Edition]:
+        """Editions of this Book currently in stock at this Bookstore.
+
+        Filtered to Availability.AVAILABLE — per ADR 0002, a matched-but-out-
+        of-stock Edition must look identical to no match at all.
+        """
+        ...
+
+    @abstractmethod
+    async def search_titles(
+        self, query: str, http_client: httpx.AsyncClient
+    ) -> list[Book]:
+        """Free-text search discovery against this Bookstore.
+
+        Deliberately NOT filtered by Availability (unlike find_editions) — a
+        Book stays discoverable by search even when currently out of stock;
+        only the /books live-check page cares about stock status.
+        """
+        ...
+
+
+class CatalogBookstoreClient(BookstoreClient):
+    """A Bookstore with no usable live search endpoint, served from a sitemap catalog.
 
     Neither Laguna nor Vulkan exposes a working live search endpoint (confirmed
     during implementation: Laguna's search box is client-side JS only, Vulkan's
@@ -65,7 +102,6 @@ class BookstoreClient(ABC):
     price check on the shortlisted pages is always live, per ADR 0001.
     """
 
-    bookstore: str
     sitemap_url: str
     cache_key: str
 
@@ -95,11 +131,15 @@ class BookstoreClient(ABC):
                 return stale
             raise
 
-        urls = [url for url in parse_sitemap_urls(response.text) if self._is_book_url(url)]
+        urls = [
+            url for url in parse_sitemap_urls(response.text) if self._is_book_url(url)
+        ]
         write_cache(settings.cache_dir, self.cache_key, urls)
         return urls
 
-    async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
+    async def find_editions(
+        self, book: Book, http_client: httpx.AsyncClient
+    ) -> list[Edition]:
         catalog = await self._get_catalog(http_client)
         candidates = shortlist_candidates(book, catalog)[:MAX_CANDIDATES_TO_FETCH]
 
@@ -129,7 +169,9 @@ class BookstoreClient(ABC):
 
         return editions
 
-    async def search_titles(self, query: str, http_client: httpx.AsyncClient) -> list[Book]:
+    async def search_titles(
+        self, query: str, http_client: httpx.AsyncClient
+    ) -> list[Book]:
         """Free-text search discovery against this store's cached catalog.
 
         Unlike find_editions(), results are not filtered by Availability — a
@@ -172,8 +214,14 @@ async def safe_find_editions(
     """find_editions() wrapped so one store's failure never blocks the others."""
     try:
         editions = await client.find_editions(book, http_client)
-        return StoreCheckResult(bookstore=client.bookstore, status="ok", editions=editions)
+        return StoreCheckResult(
+            bookstore=client.bookstore, status="ok", editions=editions
+        )
     except httpx.TimeoutException as exc:
-        return StoreCheckResult(bookstore=client.bookstore, status="timeout", error_message=str(exc))
+        return StoreCheckResult(
+            bookstore=client.bookstore, status="timeout", error_message=str(exc)
+        )
     except httpx.HTTPError as exc:
-        return StoreCheckResult(bookstore=client.bookstore, status="error", error_message=str(exc))
+        return StoreCheckResult(
+            bookstore=client.bookstore, status="error", error_message=str(exc)
+        )

@@ -6,7 +6,7 @@ import httpx
 
 from book_finder.config import settings
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
-from book_finder.stores.base import BookstoreClient, matches_book
+from book_finder.stores.base import BookstoreClient, matches_book, url_slug
 
 SEARCH_URL = "https://booka.rs/wp-json/wc/store/v1/products?search={query}"
 PRODUCT_URL = "https://booka.rs/wp-json/wp/v2/product?slug={slug}"
@@ -117,17 +117,13 @@ async def search_books(query: str, http_client: httpx.AsyncClient) -> list[Editi
 
     editions = []
     for edition in matched:
-        author = await resolve_author(_slug_from_url(edition.url), http_client)
+        author = await resolve_author(url_slug(edition.url), http_client)
         editions.append(
             edition.model_copy(
                 update={"book": Book(title=edition.book.title, author=author)}
             )
         )
     return editions
-
-
-def _slug_from_url(url: str) -> str:
-    return url.rstrip("/").rsplit("/", 1)[-1]
 
 
 async def resolve_author(slug: str, http_client: httpx.AsyncClient) -> str:
@@ -180,8 +176,17 @@ class BookaClient(BookstoreClient):
 
     bookstore = Bookstore.BOOKA.value
 
-    def _parse_product_page(self, html: str) -> Edition | None:
-        raise NotImplementedError("BookaClient overrides find_editions() directly")
+    async def search_titles(
+        self, query: str, http_client: httpx.AsyncClient
+    ) -> list[Book]:
+        """Free-text search discovery via Booka's own search API.
+
+        Unlike find_editions(), results are not filtered by Availability — a
+        Book stays discoverable via search even when out of stock (ADR 0002).
+        Author is resolved per matching candidate, as search_books() does.
+        """
+        editions = await search_books(query, http_client)
+        return [edition.book for edition in editions]
 
     async def find_editions(
         self, book: Book, http_client: httpx.AsyncClient
@@ -203,7 +208,7 @@ class BookaClient(BookstoreClient):
 
         editions = []
         for edition in shortlisted:
-            author = await resolve_author(_slug_from_url(edition.url), http_client)
+            author = await resolve_author(url_slug(edition.url), http_client)
             if not author and book.author.strip():
                 # Author lookup genuinely failed/unknown and the query cares
                 # about author — do not let matches_book's "no author data"

@@ -3,7 +3,7 @@ import json
 from bs4 import BeautifulSoup
 
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
-from book_finder.stores.base import BookstoreClient
+from book_finder.stores.base import CatalogBookstoreClient
 
 _LANGUAGE_NAMES = {
     "sr": "Serbian",
@@ -72,7 +72,7 @@ def parse_product_page(html: str) -> Edition | None:
     )
 
 
-class LagunaClient(BookstoreClient):
+class LagunaClient(CatalogBookstoreClient):
     bookstore = Bookstore.LAGUNA.value
     sitemap_url = "https://laguna.rs/sitemap/products/1/"
     cache_key = "catalog_laguna"

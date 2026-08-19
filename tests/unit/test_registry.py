@@ -1,14 +1,28 @@
+from book_finder.stores.base import BookstoreClient, CatalogBookstoreClient
 from book_finder.stores.booka import BookaClient
 from book_finder.stores.delfi import DelfiClient
-from book_finder.stores.registry import ACTIVE_CLIENTS, CATALOG_SEARCH_CLIENTS
+from book_finder.stores.registry import ACTIVE_CLIENTS
 
 
 def test_booka_is_an_active_client() -> None:
     assert any(isinstance(client, BookaClient) for client in ACTIVE_CLIENTS)
 
 
-def test_booka_is_not_a_catalog_search_client() -> None:
-    # Booka has its own live search API (see ADR 0009), same reasoning as
-    # Delfi's exclusion from the sitemap-catalog search path.
-    assert not any(isinstance(client, BookaClient) for client in CATALOG_SEARCH_CLIENTS)
-    assert not any(isinstance(client, DelfiClient) for client in CATALOG_SEARCH_CLIENTS)
+def test_booka_and_delfi_do_not_use_the_sitemap_catalog_search_path() -> None:
+    # Booka and Delfi have their own live search APIs (ADR 0009 / ADR 0004),
+    # so they must not inherit the sitemap-catalog machinery. This used to be
+    # expressed as a separate CATALOG_SEARCH_CLIENTS list in the registry;
+    # now it's a type distinction, so the registry needs only one list.
+    for client in ACTIVE_CLIENTS:
+        if isinstance(client, BookaClient | DelfiClient):
+            assert not isinstance(client, CatalogBookstoreClient)
+
+
+def test_every_active_client_satisfies_the_one_bookstore_contract() -> None:
+    # The point of the split: search and the live-check page can iterate a
+    # single list without asking which kind of store each client is.
+    assert ACTIVE_CLIENTS
+    for client in ACTIVE_CLIENTS:
+        assert isinstance(client, BookstoreClient)
+        assert callable(client.find_editions)
+        assert callable(client.search_titles)

@@ -4,7 +4,7 @@ import re
 from bs4 import BeautifulSoup
 
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
-from book_finder.stores.base import BookstoreClient
+from book_finder.stores.base import CatalogBookstoreClient
 
 
 def _ld_json_blocks(html: str) -> list[dict]:
@@ -66,7 +66,7 @@ def parse_product_page(html: str) -> Edition | None:
     )
 
 
-class VulkanClient(BookstoreClient):
+class VulkanClient(CatalogBookstoreClient):
     bookstore = Bookstore.VULKAN.value
     sitemap_url = "https://www.knjizare-vulkan.rs/files/sitemap/SRB_rs/product.xml"
     cache_key = "catalog_vulkan"

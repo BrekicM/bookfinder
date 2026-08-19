@@ -23,7 +23,9 @@ def build_search_url(query: str, category: str = "Sve kategorije") -> str:
     # quote(..., safe="") also encodes "/", which appears in real titles
     # (omnibus editions like "A / B / C") and would otherwise be read as
     # extra path segments by Delfi's path-based search endpoint, 404ing.
-    return SEARCH_URL.format(category=quote(category, safe=""), query=quote(query, safe=""))
+    return SEARCH_URL.format(
+        category=quote(category, safe=""), query=quote(query, safe="")
+    )
 
 
 def parse_search_results(raw_json: str) -> list[Edition]:
@@ -41,13 +43,19 @@ def parse_search_results(raw_json: str) -> list[Edition]:
         author = authors[0].get("authorName", "") if authors else ""
 
         is_available = bool(item.get("isAvailable", False))
-        price = item.get("priceList", {}).get("regularDiscountPrice") if is_available else None
+        price = (
+            item.get("priceList", {}).get("regularDiscountPrice")
+            if is_available
+            else None
+        )
 
         editions.append(
             Edition(
                 book=Book(title=title, author=author),
                 bookstore=Bookstore.DELFI,
-                availability=Availability.AVAILABLE if is_available else Availability.NOT_AVAILABLE,
+                availability=Availability.AVAILABLE
+                if is_available
+                else Availability.NOT_AVAILABLE,
                 price_rsd=float(price) if price is not None else None,
                 # No language field is exposed by this API (mirrors Vulkan);
                 # Delfi is Serbia's largest domestic retailer, so default fits.
@@ -59,7 +67,9 @@ def parse_search_results(raw_json: str) -> list[Edition]:
     return editions
 
 
-async def fetch_book_editions(query: str, http_client: httpx.AsyncClient) -> list[Edition]:
+async def fetch_book_editions(
+    query: str, http_client: httpx.AsyncClient
+) -> list[Edition]:
     """Search across BOOK_CATEGORIES and merge, deduping by product URL.
 
     A single "Sve kategorije" (all categories) search is capped and ranked
@@ -117,10 +127,20 @@ class DelfiClient(BookstoreClient):
 
     bookstore = Bookstore.DELFI.value
 
-    def _parse_product_page(self, html: str) -> Edition | None:
-        raise NotImplementedError("DelfiClient overrides find_editions() directly")
+    async def search_titles(
+        self, query: str, http_client: httpx.AsyncClient
+    ) -> list[Book]:
+        """Free-text search discovery via Delfi's own search API.
 
-    async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
+        Unlike find_editions(), results are not filtered by Availability — a
+        Book stays discoverable via search even when out of stock (ADR 0002).
+        """
+        editions = await search_books(query, http_client)
+        return [edition.book for edition in editions]
+
+    async def find_editions(
+        self, book: Book, http_client: httpx.AsyncClient
+    ) -> list[Edition]:
         candidates = await fetch_book_editions(book.title, http_client)
         return [
             edition
