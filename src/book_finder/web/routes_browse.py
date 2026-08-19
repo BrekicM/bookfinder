@@ -3,14 +3,18 @@ from datetime import timedelta
 import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from book_finder.config import settings
 from book_finder.domain.models import Genre
 from book_finder.popularity.service import get_lists
+from book_finder.web.render import render
 
 router = APIRouter()
-templates = Jinja2Templates(directory="src/book_finder/web/templates")
+
+
+def genre_translation_key(genre: Genre) -> str:
+    return f"genre_{genre.name.lower()}"
+
 
 GENRE_SLUGS: dict[str, Genre] = {
     "fiction": Genre.FICTION,
@@ -27,7 +31,7 @@ GENRE_SLUGS: dict[str, Genre] = {
 
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "home.html", {"genre_slugs": GENRE_SLUGS})
+    return render(request, "home.html", {"genre_slugs": GENRE_SLUGS})
 
 
 @router.get("/genres/{genre_slug}", response_class=HTMLResponse)
@@ -44,7 +48,7 @@ async def genre_page(request: Request, genre_slug: str) -> HTMLResponse:
             cache_ttl=timedelta(hours=settings.popularity_cache_ttl_hours),
         )
 
-    return templates.TemplateResponse(
+    return render(
         request,
         "genre.html",
         {

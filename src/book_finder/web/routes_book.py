@@ -3,16 +3,15 @@ import asyncio
 import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from book_finder.config import settings
 from book_finder.domain.models import Book
 from book_finder.stores.base import safe_find_editions
 from book_finder.stores.registry import ACTIVE_CLIENTS
+from book_finder.web.render import render
 from book_finder.wishlist.storage import is_in_wishlist
 
 router = APIRouter()
-templates = Jinja2Templates(directory="src/book_finder/web/templates")
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; BookFinder/0.1; personal use)"}
 
@@ -28,7 +27,7 @@ async def book_detail(request: Request, title: str, author: str = "") -> HTMLRes
 
     in_wishlist = is_in_wishlist(settings.wishlist_file, book)
 
-    return templates.TemplateResponse(
+    return render(
         request,
         "book_detail.html",
         {"book": book, "results": results, "in_wishlist": in_wishlist},

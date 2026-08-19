@@ -8,8 +8,11 @@
 </head>
 <body>
     <nav class="top">
-        <a href="/" class="brand">&larr; Book Finder</a>
-        <a href="/wishlist">{% from "_icons.html" import bookmark %}{{ bookmark(filled=true) }} Wishlist</a>
+        {% block brand %}<a href="/" class="brand">&larr; {{ t('brand') }}</a>{% endblock %}
+        <a href="/wishlist">{% from "_icons.html" import bookmark %}{{ bookmark(filled=true) }} {{ t('nav_wishlist') }}</a>
+        <span class="lang-switch">
+            {% for code in ["en", "sr-latn", "sr-cyrl"] %}<a href="{{ language_links[code] }}"{% if code == lang %} class="active"{% endif %}>{{ language_labels[code] }}</a>{% if not loop.last %} &middot; {% endif %}{% endfor %}
+        </span>
     </nav>
     {% block content %}{% endblock %}
 </body>

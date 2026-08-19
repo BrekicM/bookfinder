@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from book_finder.web.language_middleware import LanguageMiddleware
 from book_finder.web.routes_book import router as book_router
 from book_finder.web.routes_browse import router as browse_router
 from book_finder.web.routes_search import router as search_router
 from book_finder.web.routes_wishlist import router as wishlist_router
 
 app = FastAPI(title="Book Finder")
+app.add_middleware(LanguageMiddleware)
 app.mount("/static", StaticFiles(directory="src/book_finder/web/static"), name="static")
 app.include_router(browse_router)
 app.include_router(book_router)

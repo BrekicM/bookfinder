@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{{ genre.value }} — Book Finder{% endblock %}
+{% block title %}{{ t('genre_' ~ genre.name.lower()) }} — {{ t('brand') }}{% endblock %}
 {% block content %}
-    <h1>{{ genre.value }}</h1>
+    <h1>{{ t('genre_' ~ genre.name.lower()) }}</h1>
 
     <div class="columns">
         <div class="column">
-            <h2>Global</h2>
+            <h2>{{ t('global_heading') }}</h2>
             {% if global_list.available and global_list.entries %}
             <ol>
                 {% for entry in global_list.entries %}
@@ -16,12 +16,12 @@
                 {% endfor %}
             </ol>
             {% else %}
-            <p class="status-empty">No Global data for this genre right now.</p>
+            <p class="status-empty">{{ t('no_global_data') }}</p>
             {% endif %}
         </div>
 
         <div class="column">
-            <h2>Serbian</h2>
+            <h2>{{ t('serbian_heading') }}</h2>
             {% if serbian_list.available and serbian_list.entries %}
             <ol>
                 {% for entry in serbian_list.entries %}
@@ -32,7 +32,7 @@
                 {% endfor %}
             </ol>
             {% else %}
-            <p class="status-empty">No Serbian bestseller data for this genre.</p>
+            <p class="status-empty">{{ t('no_serbian_data') }}</p>
             {% endif %}
         </div>
     </div>
