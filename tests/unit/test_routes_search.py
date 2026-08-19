@@ -3,11 +3,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from book_finder.domain.models import Book
-from book_finder.main import app
 from book_finder.stores import registry
 from book_finder.web import routes_search
-
-client = TestClient(app)
 
 _OPEN_LIBRARY_TITLE = "Open Library Only Title"
 
@@ -26,7 +23,7 @@ async def _stub_open_library(query, http_client) -> list[dict]:
     return [{"title": _OPEN_LIBRARY_TITLE, "author_name": ["OL Author"]}]
 
 
-def test_store_native_results_precede_open_library_results(monkeypatch) -> None:
+def test_store_native_results_precede_open_library_results(client: TestClient, monkeypatch) -> None:
     # The load-bearing invariant, not any particular store order: resolve()
     # truncates at MAX_CANDIDATES, and Open Library alone can exceed that for
     # an internationally popular title — in editions that aren't actually
@@ -48,7 +45,7 @@ def test_store_native_results_precede_open_library_results(monkeypatch) -> None:
 
 @pytest.mark.parametrize("failing_bookstore", [c.bookstore for c in registry.ACTIVE_CLIENTS])
 def test_one_store_failing_does_not_blank_the_whole_search(
-    monkeypatch, failing_bookstore: str
+    client: TestClient, monkeypatch, failing_bookstore: str
 ) -> None:
     _stub_store_search(monkeypatch)
     monkeypatch.setattr(routes_search, "search_open_library", _stub_open_library)

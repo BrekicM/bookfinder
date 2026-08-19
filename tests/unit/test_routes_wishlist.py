@@ -2,12 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from book_finder.config import settings
-from book_finder.main import app
-
-client = TestClient(app)
 
 
-def test_wishlist_page_is_empty_by_default(tmp_path, monkeypatch) -> None:
+def test_wishlist_page_is_empty_by_default(client: TestClient, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
 
     response = client.get("/wishlist")
@@ -16,7 +13,7 @@ def test_wishlist_page_is_empty_by_default(tmp_path, monkeypatch) -> None:
     assert "1984" not in response.text
 
 
-def test_add_then_view_wishlist_shows_the_book(tmp_path, monkeypatch) -> None:
+def test_add_then_view_wishlist_shows_the_book(client: TestClient, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
 
     client.post("/wishlist/add", data={"title": "1984", "author": "George Orwell"})
@@ -27,7 +24,7 @@ def test_add_then_view_wishlist_shows_the_book(tmp_path, monkeypatch) -> None:
     assert "George Orwell" in response.text
 
 
-def test_remove_takes_it_off_the_wishlist_page(tmp_path, monkeypatch) -> None:
+def test_remove_takes_it_off_the_wishlist_page(client: TestClient, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
 
     client.post("/wishlist/add", data={"title": "1984", "author": "George Orwell"})
@@ -37,7 +34,7 @@ def test_remove_takes_it_off_the_wishlist_page(tmp_path, monkeypatch) -> None:
     assert "1984" not in response.text
 
 
-def test_add_redirects_to_the_given_next_url(tmp_path, monkeypatch) -> None:
+def test_add_redirects_to_the_given_next_url(client: TestClient, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
 
     response = client.post(
@@ -64,7 +61,9 @@ OFF_SITE_TARGETS = [
 
 
 @pytest.mark.parametrize("target", OFF_SITE_TARGETS)
-def test_add_refuses_to_redirect_off_site(target, tmp_path, monkeypatch) -> None:
+def test_add_refuses_to_redirect_off_site(
+    client: TestClient, target, tmp_path, monkeypatch
+) -> None:
     monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
 
     response = client.post(
@@ -78,7 +77,9 @@ def test_add_refuses_to_redirect_off_site(target, tmp_path, monkeypatch) -> None
 
 
 @pytest.mark.parametrize("target", OFF_SITE_TARGETS)
-def test_remove_refuses_to_redirect_off_site(target, tmp_path, monkeypatch) -> None:
+def test_remove_refuses_to_redirect_off_site(
+    client: TestClient, target, tmp_path, monkeypatch
+) -> None:
     monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
 
     response = client.post(

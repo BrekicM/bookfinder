@@ -1,12 +1,14 @@
 from datetime import timedelta
+from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from book_finder.config import settings
 from book_finder.domain.models import Genre
 from book_finder.popularity.service import get_lists
+from book_finder.web.http_client import get_http_client
 from book_finder.web.render import render
 
 router = APIRouter()
@@ -30,18 +32,21 @@ async def home(request: Request) -> HTMLResponse:
 
 
 @router.get("/genres/{genre_slug}", response_class=HTMLResponse)
-async def genre_page(request: Request, genre_slug: str) -> HTMLResponse:
+async def genre_page(
+    request: Request,
+    genre_slug: str,
+    http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)],
+) -> HTMLResponse:
     genre = GENRE_SLUGS.get(genre_slug)
     if genre is None:
         raise HTTPException(status_code=404, detail="Unknown genre")
 
-    async with httpx.AsyncClient() as http_client:
-        global_list, serbian_list = await get_lists(
-            genre,
-            http_client,
-            cache_dir=settings.cache_dir,
-            cache_ttl=timedelta(hours=settings.popularity_cache_ttl_hours),
-        )
+    global_list, serbian_list = await get_lists(
+        genre,
+        http_client,
+        cache_dir=settings.cache_dir,
+        cache_ttl=timedelta(hours=settings.popularity_cache_ttl_hours),
+    )
 
     return render(
         request,
