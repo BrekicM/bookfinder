@@ -1,3 +1,4 @@
+from pathlib import Path
 from urllib.parse import urlencode
 
 from fastapi import Request
@@ -11,7 +12,9 @@ from book_finder.i18n.strings import (
     t,
 )
 
-templates = Jinja2Templates(directory="src/book_finder/web/templates")
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals["genre_translation_key"] = genre_translation_key
 
 
