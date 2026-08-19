@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Search: {{ query }} — Book Finder{% endblock %}
+{% block title %}Search: {{ query }} — {{ t('brand') }}{% endblock %}
 {% block content %}
-    <h1>Search results for "{{ query }}"</h1>
+    <h1>{{ t('search_results_heading', query) }}</h1>
 
     {% if candidates %}
-        <p>Multiple matches — which one did you mean?</p>
+        <p>{{ t('multiple_matches') }}</p>
         {% for book in candidates %}
         <div class="card candidate">
             <a href="/books?title={{ book.title | urlencode }}&author={{ book.author | urlencode }}">{{ book.title }}</a>
@@ -12,6 +12,6 @@
         </div>
         {% endfor %}
     {% else %}
-        <p class="status-empty">No matches found.</p>
+        <p class="status-empty">{{ t('no_matches') }}</p>
     {% endif %}
 {% endblock %}

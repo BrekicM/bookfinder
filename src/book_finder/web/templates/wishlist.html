@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% from "_icons.html" import bookmark, empty_shelf %}
-{% block title %}Wishlist — Book Finder{% endblock %}
+{% block title %}{{ t('wishlist_heading') }} — {{ t('brand') }}{% endblock %}
 {% block content %}
-    <h1>Wishlist</h1>
+    <h1>{{ t('wishlist_heading') }}</h1>
 
     {% if books %}
         {% for book in books %}
@@ -13,11 +13,11 @@
                 <input type="hidden" name="title" value="{{ book.title }}">
                 <input type="hidden" name="author" value="{{ book.author }}">
                 <input type="hidden" name="next" value="/wishlist">
-                <button type="submit">{{ bookmark(filled=true) }} Remove</button>
+                <button type="submit">{{ bookmark(filled=true) }} {{ t('remove') }}</button>
             </form>
         </div>
         {% endfor %}
     {% else %}
-        <p class="status-empty empty-state">{{ empty_shelf(class="icon icon-large") }}<br>Your shelf is empty. Add books from their detail page.</p>
+        <p class="status-empty empty-state">{{ empty_shelf(class="icon icon-large") }}<br>{{ t('wishlist_empty') }}</p>
     {% endif %}
 {% endblock %}

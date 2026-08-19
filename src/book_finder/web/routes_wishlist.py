@@ -1,19 +1,18 @@
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 
 from book_finder.config import settings
 from book_finder.domain.models import Book
+from book_finder.web.render import render
 from book_finder.wishlist.storage import add_book, list_books, remove_book
 
 router = APIRouter()
-templates = Jinja2Templates(directory="src/book_finder/web/templates")
 
 
 @router.get("/wishlist", response_class=HTMLResponse)
 async def wishlist_page(request: Request) -> HTMLResponse:
     books = list_books(settings.wishlist_file)
-    return templates.TemplateResponse(request, "wishlist.html", {"books": books})
+    return render(request, "wishlist.html", {"books": books})
 
 
 @router.post("/wishlist/add", response_class=RedirectResponse)

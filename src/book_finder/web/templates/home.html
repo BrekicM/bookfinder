@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 {% from "_icons.html" import search %}
-{% block title %}Book Finder{% endblock %}
+{% block title %}{{ t('brand') }}{% endblock %}
+{% block brand %}<span class="brand">{{ t('brand') }}</span>{% endblock %}
 {% block content %}
-    <h1>Book Finder</h1>
+    <h1>{{ t('brand') }}</h1>
 
     <form class="search" action="/search" method="get">
-        <input type="text" name="q" placeholder="Search by title or author" required>
-        <button type="submit">{{ search() }} Search</button>
+        <input type="text" name="q" placeholder="{{ t('search_placeholder') }}" required>
+        <button type="submit">{{ search() }} {{ t('search_button') }}</button>
     </form>
 
-    <h2>Browse by genre</h2>
+    <h2>{{ t('browse_by_genre') }}</h2>
     <div class="genres">
         {% for slug, genre in genre_slugs.items() %}
-        <a href="/genres/{{ slug }}">{{ genre.value }}</a>
+        <a href="/genres/{{ slug }}">{{ t(genre_translation_key(genre)) }}</a>
         {% endfor %}
     </div>
 {% endblock %}

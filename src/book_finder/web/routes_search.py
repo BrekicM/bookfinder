@@ -5,16 +5,15 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 
 from book_finder.search.open_library_search import search_open_library
 from book_finder.search.resolver import resolve
 from book_finder.search.store_search import books_to_search_dicts, search_delfi_books
 from book_finder.stores.base import BookstoreClient
 from book_finder.stores.registry import CATALOG_SEARCH_CLIENTS
+from book_finder.web.render import render
 
 router = APIRouter()
-templates = Jinja2Templates(directory="src/book_finder/web/templates")
 
 
 async def _safe(source: Awaitable[list[dict]]) -> list[dict]:
@@ -62,6 +61,8 @@ async def search(request: Request, q: str) -> HTMLResponse | RedirectResponse:
         query_string = urlencode({"title": book.title, "author": book.author})
         return RedirectResponse(url=f"/books?{query_string}")
 
-    return templates.TemplateResponse(
-        request, "search_results.html", {"query": q, "candidates": resolution.candidates}
+    return render(
+        request,
+        "search_results.html",
+        {"query": q, "candidates": resolution.candidates},
     )

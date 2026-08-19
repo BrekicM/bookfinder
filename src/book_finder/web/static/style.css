@@ -58,7 +58,7 @@ nav.top {
     gap: 0.5rem 1.25rem;
     align-items: center;
 }
-nav.top a {
+nav.top a, nav.top .brand {
     text-decoration: none;
     color: var(--muted);
     display: inline-flex;
@@ -66,8 +66,16 @@ nav.top a {
     gap: 0.35rem;
     min-height: 2.75rem;
 }
-nav.top a.brand { font-family: var(--font-serif); font-weight: 700; color: var(--text); }
+nav.top .brand { font-family: var(--font-serif); font-weight: 700; color: var(--text); }
 nav.top a:hover { color: var(--accent); }
+
+.lang-switch {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+.lang-switch a { display: inline; color: var(--muted); min-height: 0; }
+.lang-switch a.active { color: var(--text); font-weight: 700; }
 
 .icon { flex-shrink: 0; }
 .icon-large { width: 2.5rem; height: 2.5rem; }

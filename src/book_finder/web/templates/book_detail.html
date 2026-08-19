@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import book_open, book_closed, book_unknown, bookmark %}
-{% block title %}{{ book.title }} — Book Finder{% endblock %}
+{% block title %}{{ book.title }} — {{ t('brand') }}{% endblock %}
 {% block content %}
     <h1>{{ book.title }}</h1>
     {% if book.author %}<p class="author">{{ book.author }}</p>{% endif %}
@@ -9,7 +9,7 @@
         <input type="hidden" name="title" value="{{ book.title }}">
         <input type="hidden" name="author" value="{{ book.author }}">
         <input type="hidden" name="next" value="/books?title={{ book.title | urlencode }}&author={{ book.author | urlencode }}">
-        <button type="submit">{{ bookmark(filled=in_wishlist) }} {{ "Remove from Wishlist" if in_wishlist else "Add to Wishlist" }}</button>
+        <button type="submit">{{ bookmark(filled=in_wishlist) }} {{ t('remove_from_wishlist') if in_wishlist else t('add_to_wishlist') }}</button>
     </form>
 
     {% for result in results %}
@@ -19,18 +19,18 @@
             {% if result.editions %}
                 {% for edition in result.editions %}
                 <div>
-                    <span class="status-available">{{ book_open() }} Available</span>
+                    <span class="status-available">{{ book_open() }} {{ t('available') }}</span>
                     — <span class="price">{{ "%.0f"|format(edition.price_rsd) }} RSD</span>
                     — {{ edition.language }}
                     {% if edition.format_label %}— {{ edition.format_label }}{% endif %}
-                    — <a href="{{ edition.url }}" target="_blank" rel="noopener">view</a>
+                    — <a href="{{ edition.url }}" target="_blank" rel="noopener">{{ t('view_link') }}</a>
                 </div>
                 {% endfor %}
             {% else %}
-                <p class="status-not-available">{{ book_closed() }} Not available</p>
+                <p class="status-not-available">{{ book_closed() }} {{ t('not_available') }}</p>
             {% endif %}
         {% else %}
-            <p class="status-failed">{{ book_unknown() }} Check failed ({{ result.status }})</p>
+            <p class="status-failed">{{ book_unknown() }} {{ t('check_failed') }} ({{ result.status }})</p>
         {% endif %}
     </div>
     {% endfor %}
