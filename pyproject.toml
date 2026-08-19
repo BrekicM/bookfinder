@@ -23,6 +23,9 @@ dependencies = [
 requires = ["uv_build>=0.9.26,<0.10.0"]
 build-backend = "uv_build"
 
+[tool.ruff]
+line-length = 100
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
