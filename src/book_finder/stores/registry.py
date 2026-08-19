@@ -9,10 +9,8 @@ _vulkan = VulkanClient()
 _delfi = DelfiClient()
 _booka = BookaClient()
 
+# Every client satisfies the same BookstoreClient contract (find_editions +
+# search_titles), whether it reaches its store via a real search API (Delfi,
+# Booka) or a cached sitemap catalog (Laguna, Vulkan), so search and the
+# live-check page iterate this one list.
 ACTIVE_CLIENTS: list[BookstoreClient] = [_laguna, _vulkan, _delfi, _booka]
-
-# Laguna/Vulkan have no live search API (see BookstoreClient's docstring), so
-# free-text search matches against their cached catalogs instead. Delfi and
-# Booka are excluded here — both have their own real search APIs, used
-# directly (see store_search.py).
-CATALOG_SEARCH_CLIENTS: list[BookstoreClient] = [_laguna, _vulkan]

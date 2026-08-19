@@ -39,7 +39,8 @@ def matches_book(*, candidate_title: str, candidate_author: str, book: Book) -> 
     return surname in _normalize(candidate_author)
 
 
-def _url_slug(url: str) -> str:
+def url_slug(url: str) -> str:
+    """The trailing path segment of a product URL, ignoring any trailing slash."""
     return url.rstrip("/").rsplit("/", 1)[-1]
 
 
@@ -50,7 +51,7 @@ def shortlist_candidates(book: Book, catalog_urls: list[str]) -> list[str]:
     (Vulkan), so comparison happens in slug space, not on raw candidate pages.
     """
     title_slug = slugify(book.title)
-    return [url for url in catalog_urls if title_slug in slugify(_url_slug(url))]
+    return [url for url in catalog_urls if title_slug in slugify(url_slug(url))]
 
 
 class BookstoreClient(ABC):
