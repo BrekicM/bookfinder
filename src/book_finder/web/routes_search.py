@@ -1,9 +1,10 @@
 import asyncio
 from collections.abc import Awaitable
+from typing import Annotated
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from book_finder.search.open_library_search import search_open_library
@@ -11,6 +12,7 @@ from book_finder.search.resolver import resolve
 from book_finder.search.store_search import books_to_search_dicts
 from book_finder.stores.base import BookstoreClient
 from book_finder.stores.registry import ACTIVE_CLIENTS
+from book_finder.web.http_client import get_http_client
 from book_finder.web.render import render
 
 router = APIRouter()
@@ -35,12 +37,15 @@ async def _safe_store_search(
 
 
 @router.get("/search", response_model=None)
-async def search(request: Request, q: str) -> HTMLResponse | RedirectResponse:
-    async with httpx.AsyncClient() as http_client:
-        results = await asyncio.gather(
-            *(_safe_store_search(client, q, http_client) for client in ACTIVE_CLIENTS),
-            _safe(search_open_library(q, http_client)),
-        )
+async def search(
+    request: Request,
+    q: str,
+    http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)],
+) -> HTMLResponse | RedirectResponse:
+    results = await asyncio.gather(
+        *(_safe_store_search(client, q, http_client) for client in ACTIVE_CLIENTS),
+        _safe(search_open_library(q, http_client)),
+    )
 
     # Store-native results (purchasable in Serbia, this app's core purpose)
     # go first so they survive resolve()'s MAX_CANDIDATES truncation — Open

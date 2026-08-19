@@ -4,6 +4,7 @@ from urllib.parse import quote
 
 import httpx
 
+from book_finder.config import settings
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
 from book_finder.stores.base import BookstoreClient, matches_book
 from book_finder.stores.slugify import slugify
@@ -69,7 +70,10 @@ async def fetch_book_editions(query: str, http_client: httpx.AsyncClient) -> lis
     """
     responses = await asyncio.gather(
         *(
-            http_client.get(build_search_url(query, category=category), timeout=8.0)
+            http_client.get(
+                build_search_url(query, category=category),
+                timeout=settings.store_request_timeout_seconds,
+            )
             for category in BOOK_CATEGORIES
         )
     )

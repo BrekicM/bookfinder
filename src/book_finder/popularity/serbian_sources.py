@@ -1,6 +1,7 @@
 import httpx
 from bs4 import BeautifulSoup
 
+from book_finder.config import settings
 from book_finder.domain.models import Book, Genre, PopularityEntry
 from book_finder.popularity.genre_mapping import LAGUNA_GENRE_URLS, VULKAN_GENRE_URLS
 
@@ -71,7 +72,7 @@ async def fetch_serbian_popularity(
     any_success = False
     for url, parser in sources:
         try:
-            response = await http_client.get(url, timeout=8.0)
+            response = await http_client.get(url, timeout=settings.store_request_timeout_seconds)
             response.raise_for_status()
         except httpx.HTTPError:
             continue
