@@ -4,54 +4,32 @@
 
 ### Always use TDD for implementation work
 
-**Invoke the `test-driven-development` skill before writing any implementation code.** Do this
-at the start of the task, not after — the skill governs how the code gets written, so loading
-it afterwards is too late.
-
-This applies to:
-
-- Adding a feature or endpoint
-- Fixing a bug (reproduce with a failing test first — always)
-- Changing existing behavior
-- Hardening or refactoring untested code
-
-It does not apply to config changes, documentation, dependency bumps, pure formatting, or
-throwaway exploratory spikes. The skill's own "When TDD is the wrong tool" section is the
-authority on the edge cases — follow it rather than deciding ad hoc.
+Invoke the `test-driven-development` skill before writing any implementation code. Applies to
+all implementation work (features, bug fixes, behavior changes, refactoring). Does not apply to
+config, docs, dependency bumps, formatting, or exploratory spikes — defer to the skill's own
+"When TDD is the wrong tool" section for edge cases.
 
 Do not report implementation work as done without showing real test output. If a step went in
-without a test, say so explicitly instead of glossing over it.
+without a test, say so explicitly.
 
 ### Gate work with /no-mistakes before it ships
 
-Use the `no-mistakes` skill to validate changes before they reach the push target: automated
-code review, tests, lint, docs, push, PR, and CI.
+Use the `no-mistakes` skill before pushing: `/no-mistakes <task>` to build and gate in one go,
+or bare `/no-mistakes` to gate already-committed work. Apply safe fixes automatically; stop and
+ask on ambiguous findings. A task is done once it passes the gate, not once the code changed.
 
-- To have the agent do a task and validate it in one go: `/no-mistakes <task>`.
-- To gate work that's already committed: bare `/no-mistakes`.
+### Delegate gated tasks to a subagent
 
-The pipeline applies safe fixes on its own and stops to ask when something needs a human call
-(e.g. an ambiguous review finding, a failing check with no obvious fix). Don't treat a task as
-done just because the code changed — it's done once it's passed through the gate.
+Spawn one subagent per task: implement (TDD), commit on a feature branch, then drive the
+no-mistakes pipeline (`axi run --intent`) to completion. The subagent handles `auto-fix` and
+`no-op` findings on its own judgment. On `ask-user` findings, it stops and reports verbatim to
+the parent session — it must not guess or self-approve. No concurrent gate-drivers unless asked.
 
-## Context re-entry (multi-project juggling)
+## Context re-entry
 
-I am juggling several projects, each with several concurrent sessions, and have usually lost
-the thread by the time I return to any one of them. Write every user-facing message for cold
-re-entry — assume I remember nothing from the scrollback:
+Write every response for cold re-entry — assume I remember nothing from the scrollback:
 
-- **Open with a recap.** Before any summary, decision point, or question: 2–3 plain sentences on
-  what we were just working on, why, and where it stands now.
-- **Plain language.** No invented codenames, abbreviations, or callbacks like "the earlier fix"
-  or "option B from before" — restate the thing in place, every time.
-- **Self-contained questions.** When asking me to decide something, the question itself
-  must carry everything needed to answer it: the background, the options, the tradeoffs, and
-  your recommendation. Never require scrolling back.
-- **One question at a time.** When a summary or decision point holds several open questions or
-  next steps, say so up front ("three decisions are waiting; here's the first"), then present
-  only the first and wait for the answer before raising the next. Never dump them all at once —
-  it's too much mental load.
-- **Anchor the work.** Name the project, branch, and PR when reporting status — several other
-  sessions look just like this one.
-- **End with the next action.** Close long updates with the single thing waiting on me,
-  or say explicitly that nothing is.
+- **Recap first.** Open with 2–3 sentences on what we were working on, why, and where it stands.
+- **One question at a time.** If multiple decisions are pending, say how many and present only the first.
+- **Self-contained.** Every question must carry background, options, tradeoffs, and your recommendation inline — no scrolling back required.
+- **Anchor the work.** Name the project, branch, and PR when reporting status. Close with the single next action waiting on me, or say nothing is.
