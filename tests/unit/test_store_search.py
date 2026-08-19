@@ -8,6 +8,7 @@ from book_finder.search.store_search import (
     books_to_search_dicts,
     editions_to_search_dicts,
     search_booka_books,
+    search_delfi_books,
 )
 
 
@@ -98,6 +99,42 @@ async def test_search_booka_books_resolves_author_for_matching_title() -> None:
 
     assert results == [
         {"title": "Brana na Atlantiku", "author_name": ["Frederik Begbede"]}
+    ]
+
+
+def _delfi_search_response(results: list[dict]) -> str:
+    return json.dumps({"data": {"results": results}})
+
+
+@pytest.mark.asyncio
+async def test_search_delfi_books_excludes_titles_unrelated_to_the_query() -> None:
+    matching_result = {
+        "oldProductId": 1,
+        "title": "Malo zivota",
+        "authors": [{"authorName": "Hanja Janagihara"}],
+        "isAvailable": True,
+        "priceList": {"regularDiscountPrice": 1500},
+        "cover": "Mek",
+    }
+    unrelated_result = {
+        "oldProductId": 2,
+        "title": "The Facts of Destruction",
+        "authors": [{"authorName": "Rostislav Kocourek"}],
+        "isAvailable": True,
+        "priceList": {"regularDiscountPrice": 1000},
+        "cover": "Mek",
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, text=_delfi_search_response([matching_result, unrelated_result])
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        results = await search_delfi_books("Malo zivota", http_client)
+
+    assert results == [
+        {"title": "Malo zivota", "author_name": ["Hanja Janagihara"]}
     ]
 
 

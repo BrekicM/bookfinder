@@ -86,6 +86,27 @@ async def fetch_book_editions(query: str, http_client: httpx.AsyncClient) -> lis
     return editions
 
 
+async def search_books(query: str, http_client: httpx.AsyncClient) -> list[Edition]:
+    """Free-text search discovery, filtered to titles relevant to the query.
+
+    Delfi's quick-search endpoint does its own fuzzy/ranked matching and can
+    return hits with little to no textual overlap with the query. Unlike
+    find_editions(), this doesn't gate on Availability — a book should stay
+    discoverable via search even when out of stock.
+    """
+    candidates = await fetch_book_editions(query, http_client)
+    query_book = Book(title=query, author="")
+    return [
+        edition
+        for edition in candidates
+        if matches_book(
+            candidate_title=edition.book.title,
+            candidate_author="",
+            book=query_book,
+        )
+    ]
+
+
 class DelfiClient(BookstoreClient):
     """Unlike Laguna/Vulkan, Delfi has a real internal search API — found by
     capturing the live site's own network requests (its search box calls
