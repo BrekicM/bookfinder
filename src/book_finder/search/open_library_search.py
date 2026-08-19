@@ -16,7 +16,11 @@ async def search_open_library(query: str, http_client: httpx.AsyncClient) -> lis
     """
     response = await http_client.get(
         SEARCH_URL,
-        params={"q": query, "fields": "title,author_name,first_publish_year", "limit": 20},
+        params={
+            "q": query,
+            "fields": "title,author_name,first_publish_year",
+            "limit": 20,
+        },
         timeout=8.0,
     )
     response.raise_for_status()
@@ -26,5 +30,7 @@ async def search_open_library(query: str, http_client: httpx.AsyncClient) -> lis
         doc
         for doc in docs
         if doc.get("title")
-        and matches_book(candidate_title=doc["title"], candidate_author="", book=query_book)
+        and matches_book(
+            candidate_title=doc["title"], candidate_author="", book=query_book
+        )
     ]
