@@ -133,9 +133,7 @@ async def test_search_delfi_books_excludes_titles_unrelated_to_the_query() -> No
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         results = await search_delfi_books("Malo zivota", http_client)
 
-    assert results == [
-        {"title": "Malo zivota", "author_name": ["Hanja Janagihara"]}
-    ]
+    assert results == [{"title": "Malo zivota", "author_name": ["Hanja Janagihara"]}]
 
 
 @pytest.mark.asyncio
