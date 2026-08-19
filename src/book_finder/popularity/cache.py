@@ -17,7 +17,8 @@ def write_cache(cache_dir: Path, key: str, data: Any, *, now: datetime | None = 
     _path_for(cache_dir, key).write_text(json.dumps(payload), encoding="utf-8")
 
 
-def read_stale(cache_dir: Path, key: str, *, now: datetime | None = None) -> Any | None:
+def read_stale(cache_dir: Path, key: str) -> Any | None:
+    """Read cached data of any age — staleness is the caller's call, not ours."""
     path = _path_for(cache_dir, key)
     if not path.exists():
         return None
