@@ -27,7 +27,9 @@ def test_falls_back_to_english_for_sr_latn_when_key_missing(monkeypatch) -> None
     assert t("only_in_english", "sr-latn") == "Only in English"
 
 
-def test_falls_back_to_english_untransliterated_for_sr_cyrl_when_key_missing(monkeypatch) -> None:
+def test_falls_back_to_english_untransliterated_for_sr_cyrl_when_key_missing(
+    monkeypatch,
+) -> None:
     monkeypatch.setitem(EN, "only_in_english", "Only in English")
     assert t("only_in_english", "sr-cyrl") == "Only in English"
 

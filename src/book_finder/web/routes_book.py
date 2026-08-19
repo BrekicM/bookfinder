@@ -20,9 +20,14 @@ _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; BookFinder/0.1; personal use
 async def book_detail(request: Request, title: str, author: str = "") -> HTMLResponse:
     book = Book(title=title, author=author)
 
-    async with httpx.AsyncClient(headers=_HEADERS, follow_redirects=True) as http_client:
+    async with httpx.AsyncClient(
+        headers=_HEADERS, follow_redirects=True
+    ) as http_client:
         results = await asyncio.gather(
-            *(safe_find_editions(client, book, http_client) for client in ACTIVE_CLIENTS)
+            *(
+                safe_find_editions(client, book, http_client)
+                for client in ACTIVE_CLIENTS
+            )
         )
 
     in_wishlist = is_in_wishlist(settings.wishlist_file, book)

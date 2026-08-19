@@ -47,5 +47,7 @@ def test_accept_language_with_no_supported_match_falls_back_to_english() -> None
 
 
 def test_accept_language_honors_q_value_preference_order() -> None:
-    result = resolve_language(query_param=None, cookie=None, accept_language="fr;q=0.9,sr-cyrl;q=0.5")
+    result = resolve_language(
+        query_param=None, cookie=None, accept_language="fr;q=0.9,sr-cyrl;q=0.5"
+    )
     assert result == "sr-cyrl"

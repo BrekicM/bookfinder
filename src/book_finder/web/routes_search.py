@@ -62,5 +62,7 @@ async def search(request: Request, q: str) -> HTMLResponse | RedirectResponse:
         return RedirectResponse(url=f"/books?{query_string}")
 
     return render(
-        request, "search_results.html", {"query": q, "candidates": resolution.candidates}
+        request,
+        "search_results.html",
+        {"query": q, "candidates": resolution.candidates},
     )

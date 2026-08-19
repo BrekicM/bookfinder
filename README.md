@@ -83,6 +83,10 @@ Ctrl+C.
   format at each of the three stores, with a link to buy.
 - **Wishlist** — click "Add to Wishlist" on a book's page to save it; find
   it again anytime from the Wishlist link in the nav.
+- **Language** — switch the UI between English, Serbian (Latin), and Serbian
+  (Cyrillic) via the EN / SR / SR-ĆIR links in the nav; your choice is
+  remembered on your next visit. Book titles, authors, and your search text
+  are never translated.
 
 ## Test
 
