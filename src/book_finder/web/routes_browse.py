@@ -11,11 +11,6 @@ from book_finder.web.render import render
 
 router = APIRouter()
 
-
-def genre_translation_key(genre: Genre) -> str:
-    return f"genre_{genre.name.lower()}"
-
-
 GENRE_SLUGS: dict[str, Genre] = {
     "fiction": Genre.FICTION,
     "fantasy": Genre.FANTASY,

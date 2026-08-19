@@ -1,3 +1,4 @@
+from book_finder.domain.models import Genre
 from book_finder.i18n.transliteration import to_cyrillic
 
 EN: dict[str, str] = {
@@ -73,6 +74,10 @@ LANGUAGE_LABELS: dict[str, str] = {
     "sr-latn": "SR",
     "sr-cyrl": "SR-ĆIR",
 }
+
+
+def genre_translation_key(genre: Genre) -> str:
+    return f"genre_{genre.name.lower()}"
 
 
 def t(key: str, lang: str, *args: str) -> str:

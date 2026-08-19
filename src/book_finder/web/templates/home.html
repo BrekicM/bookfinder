@@ -13,7 +13,7 @@
     <h2>{{ t('browse_by_genre') }}</h2>
     <div class="genres">
         {% for slug, genre in genre_slugs.items() %}
-        <a href="/genres/{{ slug }}">{{ t('genre_' ~ genre.name.lower()) }}</a>
+        <a href="/genres/{{ slug }}">{{ t(genre_translation_key(genre)) }}</a>
         {% endfor %}
     </div>
 {% endblock %}

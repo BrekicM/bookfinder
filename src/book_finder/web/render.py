@@ -4,9 +4,10 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from book_finder.i18n.strings import LANGUAGE_LABELS, SUPPORTED_LANGUAGES, t
+from book_finder.i18n.strings import LANGUAGE_LABELS, SUPPORTED_LANGUAGES, genre_translation_key, t
 
 templates = Jinja2Templates(directory="src/book_finder/web/templates")
+templates.env.globals["genre_translation_key"] = genre_translation_key
 
 
 def _language_links(request: Request) -> dict[str, str]:

@@ -15,7 +15,10 @@ def _parse_accept_language(header: str) -> list[str]:
         quality = 1.0
         for param in params.split(";"):
             if param.strip().startswith("q="):
-                quality = float(param.strip()[2:])
+                try:
+                    quality = float(param.strip()[2:])
+                except ValueError:
+                    quality = 1.0
         entries.append((quality, tag.strip().lower()))
     entries.sort(key=lambda entry: entry[0], reverse=True)
     return [tag for _, tag in entries]
