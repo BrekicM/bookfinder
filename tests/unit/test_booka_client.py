@@ -143,15 +143,11 @@ async def test_find_editions_excludes_when_title_does_not_match() -> None:
 
 
 @pytest.mark.asyncio
-async def test_find_editions_excludes_when_author_resolution_fails_and_book_has_author() -> (
-    None
-):
+async def test_find_editions_excludes_when_author_resolution_fails_and_book_has_author() -> None:
     # Hard requirement: an unresolved author (empty pisac list) must NOT be
     # treated as "any author matches" when the query specifies an author —
     # that fallback is only valid for stores with no author data at all.
-    handler = _handler(
-        search_body=[_SEARCH_RESULT], product_body=_NO_PISAC_PRODUCT_RESPONSE
-    )
+    handler = _handler(search_body=[_SEARCH_RESULT], product_body=_NO_PISAC_PRODUCT_RESPONSE)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         book = Book(title="Brana na Atlantiku", author="Frederik Begbede")
@@ -164,9 +160,7 @@ async def test_find_editions_excludes_when_author_resolution_fails_and_book_has_
 async def test_find_editions_keeps_match_when_book_has_no_author_specified() -> None:
     # When the query itself has no author to verify, an unresolved author
     # must not block an otherwise valid title match.
-    handler = _handler(
-        search_body=[_SEARCH_RESULT], product_body=_EMPTY_PRODUCT_RESPONSE
-    )
+    handler = _handler(search_body=[_SEARCH_RESULT], product_body=_EMPTY_PRODUCT_RESPONSE)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         book = Book(title="Brana na Atlantiku", author="")

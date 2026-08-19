@@ -54,9 +54,7 @@ def test_genre_labels_on_home_page_are_translated() -> None:
     assert "Fantastika" in response.text
 
 
-def test_wishlist_page_follows_the_same_language_switching(
-    tmp_path, monkeypatch
-) -> None:
+def test_wishlist_page_follows_the_same_language_switching(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(settings, "wishlist_file", tmp_path / "wishlist.json")
 
     response = client.get("/wishlist?lang=sr-latn")

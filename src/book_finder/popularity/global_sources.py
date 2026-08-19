@@ -33,7 +33,9 @@ def build_entries(works: list[dict]) -> list[PopularityEntry]:
     return entries
 
 
-async def fetch_global_popularity(genre: Genre, http_client: httpx.AsyncClient) -> list[PopularityEntry]:
+async def fetch_global_popularity(
+    genre: Genre, http_client: httpx.AsyncClient
+) -> list[PopularityEntry]:
     subject = GENRE_SUBJECTS[genre]
     response = await http_client.get(
         f"https://openlibrary.org/subjects/{subject}.json",

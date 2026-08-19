@@ -61,9 +61,7 @@ def parse_search_item(item: dict) -> Edition | None:
     return Edition(
         book=Book(title=html.unescape(name), author=""),
         bookstore=Bookstore.BOOKA,
-        availability=Availability.AVAILABLE
-        if is_available
-        else Availability.NOT_AVAILABLE,
+        availability=Availability.AVAILABLE if is_available else Availability.NOT_AVAILABLE,
         price_rsd=price,
         # Booka's Store API doesn't expose the edition's language directly,
         # but it's a domestic Serbian retailer selling translated/domestic
@@ -85,9 +83,7 @@ def parse_search_results(raw_json: str) -> list[Edition]:
     return editions
 
 
-async def fetch_search_results(
-    query: str, http_client: httpx.AsyncClient
-) -> list[Edition]:
+async def fetch_search_results(query: str, http_client: httpx.AsyncClient) -> list[Edition]:
     response = await http_client.get(
         build_search_url(query), timeout=settings.store_request_timeout_seconds
     )
@@ -110,18 +106,14 @@ async def search_books(query: str, http_client: httpx.AsyncClient) -> list[Editi
     matched = [
         edition
         for edition in candidates
-        if matches_book(
-            candidate_title=edition.book.title, candidate_author="", book=query_book
-        )
+        if matches_book(candidate_title=edition.book.title, candidate_author="", book=query_book)
     ]
 
     editions = []
     for edition in matched:
         author = await resolve_author(url_slug(edition.url), http_client)
         editions.append(
-            edition.model_copy(
-                update={"book": Book(title=edition.book.title, author=author)}
-            )
+            edition.model_copy(update={"book": Book(title=edition.book.title, author=author)})
         )
     return editions
 
@@ -176,9 +168,7 @@ class BookaClient(BookstoreClient):
 
     bookstore = Bookstore.BOOKA.value
 
-    async def search_titles(
-        self, query: str, http_client: httpx.AsyncClient
-    ) -> list[Book]:
+    async def search_titles(self, query: str, http_client: httpx.AsyncClient) -> list[Book]:
         """Free-text search discovery via Booka's own search API.
 
         Unlike find_editions(), results are not filtered by Availability — a
@@ -188,9 +178,7 @@ class BookaClient(BookstoreClient):
         editions = await search_books(query, http_client)
         return [edition.book for edition in editions]
 
-    async def find_editions(
-        self, book: Book, http_client: httpx.AsyncClient
-    ) -> list[Edition]:
+    async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
         candidates = await fetch_search_results(book.title, http_client)
 
         # Cheap title-only shortlist first. candidate_author="" here means
@@ -201,9 +189,7 @@ class BookaClient(BookstoreClient):
             edition
             for edition in candidates
             if edition.availability == Availability.AVAILABLE
-            and matches_book(
-                candidate_title=edition.book.title, candidate_author="", book=book
-            )
+            and matches_book(candidate_title=edition.book.title, candidate_author="", book=book)
         ]
 
         editions = []
@@ -214,9 +200,7 @@ class BookaClient(BookstoreClient):
                 # about author — do not let matches_book's "no author data"
                 # fallback silently pass this through.
                 continue
-            if matches_book(
-                candidate_title=edition.book.title, candidate_author=author, book=book
-            ):
+            if matches_book(candidate_title=edition.book.title, candidate_author=author, book=book):
                 editions.append(
                     edition.model_copy(
                         update={"book": Book(title=edition.book.title, author=author)}

@@ -67,9 +67,7 @@ class BookstoreClient(ABC):
     bookstore: str
 
     @abstractmethod
-    async def find_editions(
-        self, book: Book, http_client: httpx.AsyncClient
-    ) -> list[Edition]:
+    async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
         """Editions of this Book currently in stock at this Bookstore.
 
         Filtered to Availability.AVAILABLE — per ADR 0002, a matched-but-out-
@@ -78,9 +76,7 @@ class BookstoreClient(ABC):
         ...
 
     @abstractmethod
-    async def search_titles(
-        self, query: str, http_client: httpx.AsyncClient
-    ) -> list[Book]:
+    async def search_titles(self, query: str, http_client: httpx.AsyncClient) -> list[Book]:
         """Free-text search discovery against this Bookstore.
 
         Deliberately NOT filtered by Availability (unlike find_editions) — a
@@ -131,15 +127,11 @@ class CatalogBookstoreClient(BookstoreClient):
                 return stale
             raise
 
-        urls = [
-            url for url in parse_sitemap_urls(response.text) if self._is_book_url(url)
-        ]
+        urls = [url for url in parse_sitemap_urls(response.text) if self._is_book_url(url)]
         write_cache(settings.cache_dir, self.cache_key, urls)
         return urls
 
-    async def find_editions(
-        self, book: Book, http_client: httpx.AsyncClient
-    ) -> list[Edition]:
+    async def find_editions(self, book: Book, http_client: httpx.AsyncClient) -> list[Edition]:
         catalog = await self._get_catalog(http_client)
         candidates = shortlist_candidates(book, catalog)[:MAX_CANDIDATES_TO_FETCH]
 
@@ -169,9 +161,7 @@ class CatalogBookstoreClient(BookstoreClient):
 
         return editions
 
-    async def search_titles(
-        self, query: str, http_client: httpx.AsyncClient
-    ) -> list[Book]:
+    async def search_titles(self, query: str, http_client: httpx.AsyncClient) -> list[Book]:
         """Free-text search discovery against this store's cached catalog.
 
         Unlike find_editions(), results are not filtered by Availability — a
@@ -214,14 +204,10 @@ async def safe_find_editions(
     """find_editions() wrapped so one store's failure never blocks the others."""
     try:
         editions = await client.find_editions(book, http_client)
-        return StoreCheckResult(
-            bookstore=client.bookstore, status="ok", editions=editions
-        )
+        return StoreCheckResult(bookstore=client.bookstore, status="ok", editions=editions)
     except httpx.TimeoutException as exc:
         return StoreCheckResult(
             bookstore=client.bookstore, status="timeout", error_message=str(exc)
         )
     except httpx.HTTPError as exc:
-        return StoreCheckResult(
-            bookstore=client.bookstore, status="error", error_message=str(exc)
-        )
+        return StoreCheckResult(bookstore=client.bookstore, status="error", error_message=str(exc))

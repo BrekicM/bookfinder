@@ -23,9 +23,7 @@ def _write(path: Path, books: list[Book]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     try:
-        tmp_path.write_text(
-            json.dumps([b.model_dump() for b in books]), encoding="utf-8"
-        )
+        tmp_path.write_text(json.dumps([b.model_dump() for b in books]), encoding="utf-8")
         os.replace(tmp_path, path)
     except BaseException:
         tmp_path.unlink(missing_ok=True)

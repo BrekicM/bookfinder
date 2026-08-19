@@ -46,9 +46,7 @@ def test_store_native_results_precede_open_library_results(monkeypatch) -> None:
         assert response.text.index(title) < open_library_position
 
 
-@pytest.mark.parametrize(
-    "failing_bookstore", [c.bookstore for c in registry.ACTIVE_CLIENTS]
-)
+@pytest.mark.parametrize("failing_bookstore", [c.bookstore for c in registry.ACTIVE_CLIENTS])
 def test_one_store_failing_does_not_blank_the_whole_search(
     monkeypatch, failing_bookstore: str
 ) -> None:

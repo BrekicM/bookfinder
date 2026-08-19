@@ -30,7 +30,5 @@ async def search_open_library(query: str, http_client: httpx.AsyncClient) -> lis
         doc
         for doc in docs
         if doc.get("title")
-        and matches_book(
-            candidate_title=doc["title"], candidate_author="", book=query_book
-        )
+        and matches_book(candidate_title=doc["title"], candidate_author="", book=query_book)
     ]

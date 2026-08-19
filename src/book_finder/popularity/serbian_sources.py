@@ -58,7 +58,9 @@ def has_serbian_source(genre: Genre) -> bool:
     return genre in LAGUNA_GENRE_URLS or genre in VULKAN_GENRE_URLS
 
 
-async def fetch_serbian_popularity(genre: Genre, http_client: httpx.AsyncClient) -> list[PopularityEntry]:
+async def fetch_serbian_popularity(
+    genre: Genre, http_client: httpx.AsyncClient
+) -> list[PopularityEntry]:
     sources = []
     if genre in LAGUNA_GENRE_URLS:
         sources.append((LAGUNA_GENRE_URLS[genre], parse_laguna_top_liste))
@@ -80,6 +82,5 @@ async def fetch_serbian_popularity(genre: Genre, http_client: httpx.AsyncClient)
         raise httpx.HTTPError(f"All Serbian sources failed for genre {genre.value}")
 
     return [
-        PopularityEntry(book=e.book, rank=i + 1, source=e.source)
-        for i, e in enumerate(combined)
+        PopularityEntry(book=e.book, rank=i + 1, source=e.source) for i, e in enumerate(combined)
     ]
