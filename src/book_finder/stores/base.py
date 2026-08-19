@@ -44,6 +44,24 @@ def matches_book(*, candidate_title: str, candidate_author: str, book: Book) -> 
     return surname in _normalize_for_matching(candidate_author)
 
 
+def matches_query(*, candidate_title: str, query: str) -> bool:
+    """Is a search-discovery candidate relevant to the free-text query?
+
+    Title-only relevance, by design: discovery has no Book to match against,
+    only what the user typed, and store search APIs (plus Open Library) do
+    their own fuzzy ranking that surfaces hits with no textual overlap.
+
+    Not a substitute for matches_book(..., candidate_author="") inside
+    find_editions(), where an empty candidate author means "author not
+    resolved yet" and must still be re-checked before a result is kept.
+    """
+    return matches_book(
+        candidate_title=candidate_title,
+        candidate_author="",
+        book=Book(title=query, author=""),
+    )
+
+
 def url_slug(url: str) -> str:
     """The trailing path segment of a product URL, ignoring any trailing slash."""
     return url.rstrip("/").rsplit("/", 1)[-1]

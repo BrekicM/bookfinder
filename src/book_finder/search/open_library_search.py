@@ -1,8 +1,7 @@
 import httpx
 
 from book_finder.config import settings
-from book_finder.domain.models import Book
-from book_finder.stores.base import matches_book
+from book_finder.stores.base import matches_query
 
 SEARCH_URL = "https://openlibrary.org/search.json"
 
@@ -26,10 +25,8 @@ async def search_open_library(query: str, http_client: httpx.AsyncClient) -> lis
     )
     response.raise_for_status()
     docs = response.json().get("docs", [])
-    query_book = Book(title=query, author="")
     return [
         doc
         for doc in docs
-        if doc.get("title")
-        and matches_book(candidate_title=doc["title"], candidate_author="", book=query_book)
+        if doc.get("title") and matches_query(candidate_title=doc["title"], query=query)
     ]

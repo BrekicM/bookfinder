@@ -6,7 +6,7 @@ import httpx
 
 from book_finder.config import settings
 from book_finder.domain.models import Availability, Book, Bookstore, Edition
-from book_finder.stores.base import BookstoreClient, matches_book, url_slug
+from book_finder.stores.base import BookstoreClient, matches_book, matches_query, url_slug
 
 SEARCH_URL = "https://booka.rs/wp-json/wc/store/v1/products?search={query}"
 PRODUCT_URL = "https://booka.rs/wp-json/wp/v2/product?slug={slug}"
@@ -101,12 +101,11 @@ async def search_books(query: str, http_client: httpx.AsyncClient) -> list[Editi
     search even when out of stock (mirrors BookstoreClient.search_titles).
     """
     candidates = await fetch_search_results(query, http_client)
-    query_book = Book(title=query, author="")
 
     matched = [
         edition
         for edition in candidates
-        if matches_book(candidate_title=edition.book.title, candidate_author="", book=query_book)
+        if matches_query(candidate_title=edition.book.title, query=query)
     ]
 
     editions = []
