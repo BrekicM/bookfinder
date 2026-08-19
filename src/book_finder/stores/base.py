@@ -49,22 +49,28 @@ def matches_book(*, candidate_title: str, candidate_author: str, book: Book) -> 
     return surname in _normalize_for_matching(candidate_author)
 
 
-def matches_query(*, candidate_title: str, query: str) -> bool:
+def matches_query(*, candidate_title: str, query: str, candidate_author: str = "") -> bool:
     """Is a search-discovery candidate relevant to the free-text query?
 
-    Title-only relevance, by design: discovery has no Book to match against,
-    only what the user typed, and store search APIs (plus Open Library) do
-    their own fuzzy ranking that surfaces hits with no textual overlap.
+    Relevant if the query text overlaps the candidate's title OR its author
+    (when known) — the query might be a title fragment or an author's name,
+    and store search APIs (plus Open Library) do their own fuzzy ranking
+    that surfaces hits with no textual overlap with either.
 
     Not a substitute for matches_book(..., candidate_author="") inside
     find_editions(), where an empty candidate author means "author not
     resolved yet" and must still be re-checked before a result is kept.
     """
-    return matches_book(
-        candidate_title=candidate_title,
-        candidate_author="",
-        book=Book(title=query, author=""),
-    )
+    query_norm = _normalize_for_matching(query)
+    if not query_norm:
+        return False
+
+    title_norm = _normalize_for_matching(candidate_title)
+    if title_norm and query_norm in title_norm:
+        return True
+
+    author_norm = _normalize_for_matching(candidate_author)
+    return bool(author_norm) and query_norm in author_norm
 
 
 def url_slug(url: str) -> str:

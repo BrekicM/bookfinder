@@ -28,5 +28,10 @@ async def search_open_library(query: str, http_client: httpx.AsyncClient) -> lis
     return [
         doc
         for doc in docs
-        if doc.get("title") and matches_query(candidate_title=doc["title"], query=query)
+        if doc.get("title")
+        and matches_query(
+            candidate_title=doc["title"],
+            query=query,
+            candidate_author=", ".join(doc.get("author_name") or []),
+        )
     ]
