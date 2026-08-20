@@ -189,6 +189,25 @@ def test_sanitize_query_drops_an_operator_left_dangling_at_the_end() -> None:
     assert sanitize_query("Hobit -") == "Hobit"
 
 
+def test_sanitize_query_drops_a_bare_operator_token_mid_query() -> None:
+    # Mid-query a bare operator token doesn't 500 — it silently negates, so
+    # Delfi answers 200 with the book missing from the results ("Hobit - -
+    # ilustrovano izdanje" loses the book that "Hobit ilustrovano izdanje"
+    # finds). That would surface as a false "Not available" rather than a
+    # failed check, so the token goes wherever it sits. It carries no
+    # searchable text, so dropping it costs no recall.
+    assert sanitize_query("Hobit - ilustrovano izdanje") == "Hobit ilustrovano izdanje"
+    assert sanitize_query("Hobit - - ilustrovano izdanje") == "Hobit ilustrovano izdanje"
+
+
+def test_sanitize_query_drops_an_operator_prefixed_to_a_word() -> None:
+    # A prefixed operator is the one that really negates: "Hobit
+    # -ilustrovano izdanje" and "-Hobit ilustrovano izdanje" both answer 200
+    # with the book excluded.
+    assert sanitize_query("Hobit -ilustrovano izdanje") == "Hobit ilustrovano izdanje"
+    assert sanitize_query("-Hobit ilustrovano izdanje") == "Hobit ilustrovano izdanje"
+
+
 def test_sanitize_query_is_empty_when_only_operator_tokens_remain() -> None:
     # Nothing searchable is left, so the caller skips the request entirely
     # rather than sending a path segment the endpoint answers 404 for.
@@ -196,16 +215,20 @@ def test_sanitize_query_is_empty_when_only_operator_tokens_remain() -> None:
 
 
 def test_sanitize_query_keeps_a_trailing_dash_or_plus_attached_to_a_word() -> None:
-    # Word-attached "-" and "+" return 200 from Delfi, and stripping them
-    # costs real hits: "C++" finds 15 products, "C" finds none.
+    # Word-attached "-" and "+" return 200 from Delfi with the book still in
+    # the results, and stripping them costs real hits: "C++" finds 15
+    # products, "C" finds none.
     assert sanitize_query("C++") == "C++"
+    assert sanitize_query("Hobit-") == "Hobit-"
     assert sanitize_query("Programiranje u C++") == "Programiranje u C++"
 
 
-def test_sanitize_query_drops_a_trailing_colon_or_bang_attached_to_a_word() -> None:
-    # Unlike "-" and "+", word-attached ":" and "!" are parse errors at the
-    # end of the query ("Hobit:" and "Hobit!" both answer 500), and titles
-    # ending in "!" are common in Serbian.
+def test_sanitize_query_drops_a_word_final_colon_or_bang_anywhere() -> None:
+    # Unlike "-" and "+", a word-final "!" negates the term after it even
+    # mid-query ("Hobit! ilustrovano izdanje" answers 200 with the book
+    # excluded), and at the end of the query it is a 500. Titles ending in
+    # "!" are common in Serbian, so this is broadly reachable.
+    assert sanitize_query("Hobit! ilustrovano izdanje") == "Hobit ilustrovano izdanje"
     assert sanitize_query("Ne odustaj!") == "Ne odustaj"
     assert sanitize_query("Upozorenje:") == "Upozorenje"
 

@@ -29,16 +29,18 @@ BOOK_CATEGORIES = ("Knjiga", "Strana knjiga")
 _QUERY_SYNTAX_CHARS = r'(){}[]"\/^'
 
 
-# Operators that bind to the term following them, so a token made of nothing
-# but these ("Hobit -") leaves the query dangling on an operator — a parse
-# error. Attached to a word they are ordinary text ("Jean-Paul", "C++").
-_OPERATOR_CHARS = "+-!:"
+# Operators that bind to the term following them. Dangling at the very end
+# they are a 500, but the worse case is quieter: mid-query they negate, so
+# "Hobit! ilustrovano izdanje" answers 200 with the book missing from the
+# results — a false "Not available" rather than a failed check. Leading a
+# term they always negate it, so they go from the front of every word.
+_LEADING_OPERATOR_CHARS = "+-!:"
 
-# ...except at the very end of the query, where these two are a parse error
-# even when attached to a word ("Hobit:" and "Hobit!" both answer 500, and
-# titles ending in "!" are common). "-" and "+" there are fine, and dropping
-# them costs real hits, so the trim is per character rather than blanket.
-_WORD_FINAL_OPERATOR_CHARS = ":!"
+# At the end of a word only these two still bind to what follows ("Hobit!
+# ilustrovano" excludes "ilustrovano"). A word-final "-" or "+" is ordinary
+# text that Delfi keeps ("C++" finds 15 products, "C" finds none), so the
+# trim is per character rather than blanket.
+_WORD_FINAL_OPERATOR_CHARS = "!:"
 
 
 def sanitize_query(query: str) -> str:
@@ -46,12 +48,11 @@ def sanitize_query(query: str) -> str:
     for char in _QUERY_SYNTAX_CHARS:
         query = query.replace(char, " ")
 
-    words = query.split()
-    while words and not words[-1].strip(_OPERATOR_CHARS):
-        words.pop()
-    if words:
-        words[-1] = words[-1].rstrip(_WORD_FINAL_OPERATOR_CHARS)
-    return " ".join(words)
+    words = (
+        word.lstrip(_LEADING_OPERATOR_CHARS).rstrip(_WORD_FINAL_OPERATOR_CHARS)
+        for word in query.split()
+    )
+    return " ".join(word for word in words if word)
 
 
 def build_search_url(query: str, category: str = "Sve kategorije") -> str:
