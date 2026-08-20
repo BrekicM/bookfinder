@@ -62,14 +62,18 @@ def test_skips_results_missing_required_fields() -> None:
     assert parse_search_results(json.dumps(data)) == []
 
 
-def test_build_search_url_encodes_slashes_in_the_query() -> None:
+def test_build_search_url_drops_slashes_from_the_query() -> None:
     # A title containing "/" (e.g. an omnibus edition) must not be split into
     # extra URL path segments — Delfi's search endpoint takes the query as a
-    # raw path segment, not a query-string parameter.
+    # raw path segment, not a query-string parameter. Percent-encoding it is
+    # not enough: the backend decodes the segment and hands it to a
+    # Lucene-style parser that reads "/" as a regex delimiter and answers 500,
+    # so the character is removed rather than escaped.
     url = build_search_url("The Crystal Shard / Streams of Silver")
 
     assert "/Streams" not in url
-    assert "%2F" in url
+    assert "%2F" not in url
+    assert url.endswith("The%20Crystal%20Shard%20Streams%20of%20Silver")
 
 
 def test_build_search_url_encodes_spaces() -> None:

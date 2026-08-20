@@ -19,12 +19,65 @@ SEARCH_URL = "https://delfi.rs/api/pc-frontend-api/search/quick-search-products/
 # returns real books instead. See ADR 0004's "Update" section.
 BOOK_CATEGORIES = ("Knjiga", "Strana knjiga")
 
+# Delfi's search backend feeds the query straight into a Lucene-style query
+# parser, so these grouping/quoting/regex/wildcard characters are read as
+# syntax rather than as text, and they fail in two different ways. An
+# unbalanced "(" or "/" is a parse error answered with HTTP 500 — real titles
+# carry them ("Mona Lisa Overdrive (The Neuromancer Trilogy" from Open
+# Library, omnibus editions like "A / B / C"), turning every Delfi check into
+# "check failed". The quieter half — "| ~ ?" — answers 200 while excluding
+# the wanted book from the results, which reads as a false "Not available".
+# All of them stand between words, so a space takes their place. "&" is
+# deliberately absent: probed in every position, it is ordinary text ("Fear &
+# Loathing in Las Vegas"). Results are matched locally afterwards, so
+# dropping the rest costs nothing.
+_QUERY_SYNTAX_CHARS = r'(){}[]"\/^|~?'
+
+# "*" is a wildcard the endpoint honours, so it has to go too, but it turns up
+# *inside* words (censored profanity), where a space would split the term into
+# two fragments that no longer match anything. It is deleted rather than
+# replaced: against a known-stocked title, keeping it and replacing it with a
+# space both lose the book, deleting it finds it. A token that was nothing but
+# "*" is emptied by that and then dropped, which is what keeps a standalone
+# wildcard — it matches the entire catalog — off the endpoint.
+_DELETED_QUERY_SYNTAX_CHARS = "*"
+
+
+# Operators that bind to the term following them. Dangling at the very end
+# they are a 500, but the worse case is quieter: mid-query they negate, so
+# "Hobit! ilustrovano izdanje" answers 200 with the book missing from the
+# results — a false "Not available" rather than a failed check. Leading a
+# term they always negate it, so they go from the front of every word.
+_LEADING_OPERATOR_CHARS = "+-!:"
+
+# At the end of a word these two go for different reasons. "!" still binds to
+# what follows even mid-query ("Hobit! ilustrovano" excludes "ilustrovano"),
+# while ":" does not — "Hobit: ilustrovano" still returns the book — and is
+# dropped only because a query ending on ":" is a 500, which costs no recall
+# to avoid. A word-final "-" or "+" is ordinary text that Delfi keeps ("C++"
+# finds 15 products, "C" finds none), so the trim is per character rather
+# than blanket.
+_WORD_FINAL_OPERATOR_CHARS = "!:"
+
+
+def sanitize_query(query: str) -> str:
+    """Strip the query-syntax characters Delfi's search parser chokes on."""
+    for char in _QUERY_SYNTAX_CHARS:
+        query = query.replace(char, " ")
+    for char in _DELETED_QUERY_SYNTAX_CHARS:
+        query = query.replace(char, "")
+
+    words = (
+        word.lstrip(_LEADING_OPERATOR_CHARS).rstrip(_WORD_FINAL_OPERATOR_CHARS)
+        for word in query.split()
+    )
+    return " ".join(word for word in words if word)
+
 
 def build_search_url(query: str, category: str = "Sve kategorije") -> str:
-    # quote(..., safe="") also encodes "/", which appears in real titles
-    # (omnibus editions like "A / B / C") and would otherwise be read as
-    # extra path segments by Delfi's path-based search endpoint, 404ing.
-    return SEARCH_URL.format(category=quote(category, safe=""), query=quote(query, safe=""))
+    return SEARCH_URL.format(
+        category=quote(category, safe=""), query=quote(sanitize_query(query), safe="")
+    )
 
 
 def parse_search_results(raw_json: str) -> list[Edition]:
@@ -68,10 +121,14 @@ async def fetch_book_editions(query: str, http_client: httpx.AsyncClient) -> lis
     (mugs, stickers, plushies...) real books can be crowded out of the
     results entirely — searching the book categories directly avoids that.
     """
+    sanitized_query = sanitize_query(query)
+    if not sanitized_query:
+        return []
+
     responses = await asyncio.gather(
         *(
             http_client.get(
-                build_search_url(query, category=category),
+                build_search_url(sanitized_query, category=category),
                 timeout=settings.store_request_timeout_seconds,
             )
             for category in BOOK_CATEGORIES

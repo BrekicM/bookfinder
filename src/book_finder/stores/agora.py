@@ -40,8 +40,8 @@ _BUNDLE_FORMAT_LABEL = "Zvučna knjiga (CD)"
 
 
 def build_search_url(query: str) -> str:
-    # quote(..., safe="") also encodes "/", matching Booka/Delfi's handling
-    # of titles containing slashes (omnibus editions).
+    # quote(..., safe="") also encodes "/", matching Booka's handling of
+    # titles containing slashes (omnibus editions).
     return SEARCH_URL.format(query=quote(query, safe=""))
 
 
