@@ -1,8 +1,10 @@
+import re
+
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from book_finder.domain.models import Book
+from book_finder.domain.models import Book, Bookstore
 from book_finder.stores import registry
 from book_finder.web import routes_search
 
@@ -68,3 +70,45 @@ def test_one_store_failing_does_not_blank_the_whole_search(
         if store_client.bookstore == failing_bookstore:
             continue
         assert f"{store_client.bookstore} Store Title" in response.text
+
+
+# Test list — surfacing sources that failed rather than silently shrinking results:
+# - a failing store is named in the response as unreachable
+# - a failing Open Library is named as "Open Library"
+# - all sources healthy: no unreachable notice at all
+# - every source failing: the notice appears instead of a bare "no matches"
+# - each failure is logged with its exception
+
+
+def _unreachable_notice(html: str) -> str | None:
+    match = re.search(r'<p class="status-failed">(.*?)</p>', html, re.DOTALL)
+    return match.group(1).strip() if match else None
+
+
+def test_failing_store_is_named_as_unreachable(client: TestClient, monkeypatch) -> None:
+    _stub_store_search(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_open_library)
+
+    async def failing_search(query, http_client):
+        raise httpx.ConnectError("simulated store outage")
+
+    monkeypatch.setattr(registry._delfi, "search_titles", failing_search)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is not None
+    assert Bookstore.DELFI.value in _unreachable_notice(response.text)
+
+
+def test_failing_open_library_is_named_as_unreachable(client: TestClient, monkeypatch) -> None:
+    _stub_store_search(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("simulated Open Library outage")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is not None
+    assert routes_search.OPEN_LIBRARY_SOURCE_NAME in _unreachable_notice(response.text)

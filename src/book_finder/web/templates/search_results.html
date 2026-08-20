@@ -3,6 +3,10 @@
 {% block content %}
     <h1>{{ t('search_results_heading', query) }}</h1>
 
+    {% if unreachable_sources %}
+        <p class="status-failed">{{ t('sources_unavailable', unreachable_sources | join(', ')) }}</p>
+    {% endif %}
+
     {% if candidates %}
         <p>{{ t('multiple_matches') }}</p>
         {% for book in candidates %}
