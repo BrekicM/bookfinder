@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import Awaitable
 from typing import Annotated
 from urllib.parse import urlencode
@@ -15,6 +16,8 @@ from book_finder.stores.registry import ACTIVE_CLIENTS
 from book_finder.web.http_client import get_http_client
 from book_finder.web.render import render
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 OPEN_LIBRARY_SOURCE_NAME = "Open Library"
@@ -30,7 +33,8 @@ SourceOutcome = tuple[str, list[dict] | None]
 async def _safe(name: str, source: Awaitable[list[dict]]) -> SourceOutcome:
     try:
         return name, await source
-    except httpx.HTTPError:
+    except httpx.HTTPError as exc:
+        logger.warning("Search source %s is unreachable: %s", name, exc, exc_info=exc)
         return name, None
 
 
@@ -38,11 +42,8 @@ async def _safe_store_search(
     client: BookstoreClient, query: str, http_client: httpx.AsyncClient
 ) -> SourceOutcome:
     """search_titles() wrapped so one store's failure never blanks the search."""
-    try:
-        books = await client.search_titles(query, http_client)
-    except httpx.HTTPError:
-        return client.bookstore, None
-    return client.bookstore, books_to_search_dicts(books)
+    name, books = await _safe(client.bookstore, client.search_titles(query, http_client))
+    return name, None if books is None else books_to_search_dicts(books)
 
 
 @router.get("/search", response_model=None)

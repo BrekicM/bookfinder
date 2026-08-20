@@ -1,3 +1,4 @@
+import logging
 import re
 
 import httpx
@@ -131,3 +132,47 @@ def test_does_not_claim_no_matches_when_every_source_failed(
 
     assert _unreachable_notice(response.text) is not None
     assert EN["no_matches"] not in response.text
+
+
+def test_source_failure_is_logged_with_its_exception(
+    client: TestClient, monkeypatch, caplog
+) -> None:
+    # The notice tells the user a source is down; the log is what tells us why.
+    _stub_store_search(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("openlibrary.org did not answer")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    with caplog.at_level(logging.WARNING, logger=routes_search.__name__):
+        client.get("/search", params={"q": "anything"})
+
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    message = warnings[0].getMessage()
+    assert routes_search.OPEN_LIBRARY_SOURCE_NAME in message
+    assert "openlibrary.org did not answer" in message
+    assert warnings[0].exc_info is not None
+
+
+def test_store_failure_is_logged_with_its_exception(
+    client: TestClient, monkeypatch, caplog
+) -> None:
+    _stub_store_search(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_open_library)
+
+    async def failing_search(query, http_client):
+        raise httpx.ConnectError("delfi.rs refused the connection")
+
+    monkeypatch.setattr(registry._delfi, "search_titles", failing_search)
+
+    with caplog.at_level(logging.WARNING, logger=routes_search.__name__):
+        client.get("/search", params={"q": "anything"})
+
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    message = warnings[0].getMessage()
+    assert Bookstore.DELFI.value in message
+    assert "delfi.rs refused the connection" in message
+    assert warnings[0].exc_info is not None
