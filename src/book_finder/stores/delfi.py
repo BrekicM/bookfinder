@@ -20,13 +20,17 @@ SEARCH_URL = "https://delfi.rs/api/pc-frontend-api/search/quick-search-products/
 BOOK_CATEGORIES = ("Knjiga", "Strana knjiga")
 
 # Delfi's search backend feeds the query straight into a Lucene-style query
-# parser, so these grouping/quoting/regex characters are read as syntax rather
-# than as text. An unbalanced one is a parse error the endpoint answers with
-# HTTP 500 — which real titles carry ("Mona Lisa Overdrive (The Neuromancer
-# Trilogy" from Open Library, omnibus editions like "A / B / C"), turning every
-# Delfi check into "check failed". Results are matched locally afterwards, so
-# dropping the punctuation costs nothing.
-_QUERY_SYNTAX_CHARS = r'(){}[]"\/^'
+# parser, so these grouping/quoting/regex/wildcard characters are read as
+# syntax rather than as text, and they fail in two different ways. An
+# unbalanced "(" or "/" is a parse error answered with HTTP 500 — real titles
+# carry them ("Mona Lisa Overdrive (The Neuromancer Trilogy" from Open
+# Library, omnibus editions like "A / B / C"), turning every Delfi check into
+# "check failed". The quieter half — "| ~ ? *" — answers 200 while excluding
+# the wanted book from the results, which reads as a false "Not available".
+# "&" is deliberately absent: probed in every position, it is ordinary text
+# ("Fear & Loathing in Las Vegas"). Results are matched locally afterwards,
+# so dropping the rest costs nothing.
+_QUERY_SYNTAX_CHARS = r'(){}[]"\/^|~?*'
 
 
 # Operators that bind to the term following them. Dangling at the very end
@@ -36,10 +40,13 @@ _QUERY_SYNTAX_CHARS = r'(){}[]"\/^'
 # term they always negate it, so they go from the front of every word.
 _LEADING_OPERATOR_CHARS = "+-!:"
 
-# At the end of a word only these two still bind to what follows ("Hobit!
-# ilustrovano" excludes "ilustrovano"). A word-final "-" or "+" is ordinary
-# text that Delfi keeps ("C++" finds 15 products, "C" finds none), so the
-# trim is per character rather than blanket.
+# At the end of a word these two go for different reasons. "!" still binds to
+# what follows even mid-query ("Hobit! ilustrovano" excludes "ilustrovano"),
+# while ":" does not — "Hobit: ilustrovano" still returns the book — and is
+# dropped only because a query ending on ":" is a 500, which costs no recall
+# to avoid. A word-final "-" or "+" is ordinary text that Delfi keeps ("C++"
+# finds 15 products, "C" finds none), so the trim is per character rather
+# than blanket.
 _WORD_FINAL_OPERATOR_CHARS = "!:"
 
 

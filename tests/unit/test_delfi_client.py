@@ -190,12 +190,11 @@ def test_sanitize_query_drops_an_operator_left_dangling_at_the_end() -> None:
 
 
 def test_sanitize_query_drops_a_bare_operator_token_mid_query() -> None:
-    # Mid-query a bare operator token doesn't 500 — it silently negates, so
-    # Delfi answers 200 with the book missing from the results ("Hobit - -
-    # ilustrovano izdanje" loses the book that "Hobit ilustrovano izdanje"
-    # finds). That would surface as a false "Not available" rather than a
-    # failed check, so the token goes wherever it sits. It carries no
-    # searchable text, so dropping it costs no recall.
+    # A single bare "-" mid-query is harmless — the book still comes back —
+    # but an operator-only token carries no searchable text, so dropping it
+    # anywhere is free. Doubling it is not harmless: "Hobit - - ilustrovano
+    # izdanje" answers 200 with the book missing from the results, a false
+    # "Not available" rather than a failed check.
     assert sanitize_query("Hobit - ilustrovano izdanje") == "Hobit ilustrovano izdanje"
     assert sanitize_query("Hobit - - ilustrovano izdanje") == "Hobit ilustrovano izdanje"
 
@@ -231,6 +230,28 @@ def test_sanitize_query_drops_a_word_final_colon_or_bang_anywhere() -> None:
     assert sanitize_query("Hobit! ilustrovano izdanje") == "Hobit ilustrovano izdanje"
     assert sanitize_query("Ne odustaj!") == "Ne odustaj"
     assert sanitize_query("Upozorenje:") == "Upozorenje"
+
+
+def test_sanitize_query_drops_the_wildcard_fuzzy_and_or_operators_anywhere() -> None:
+    # These were first grouped as "harmless" because they answer 200, but
+    # re-probing by result count found they silently exclude the wanted
+    # book: "Sheep?" is a single-character wildcard matching "Sheeps" but
+    # not "Sheep" itself, so the exact book is the one document the term
+    # cannot match — a false "Not available" rather than a failed check.
+    assert (
+        sanitize_query("Do Androids Dream of Electric Sheep?")
+        == "Do Androids Dream of Electric Sheep"
+    )
+    assert sanitize_query("Hobit | ilustrovano izdanje") == "Hobit ilustrovano izdanje"
+    assert sanitize_query("Hobit ~ ilustrovano izdanje") == "Hobit ilustrovano izdanje"
+    assert sanitize_query("Hobit * ilustrovano izdanje") == "Hobit ilustrovano izdanje"
+
+
+def test_sanitize_query_keeps_an_ampersand() -> None:
+    # "&" is the one character of that group that survived re-probing: it
+    # returns the book in every position, so stripping it would needlessly
+    # damage real titles.
+    assert sanitize_query("Fear & Loathing in Las Vegas") == "Fear & Loathing in Las Vegas"
 
 
 def test_sanitize_query_drops_the_boost_operator_anywhere_in_the_query() -> None:
