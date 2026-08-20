@@ -176,3 +176,34 @@ def test_store_failure_is_logged_with_its_exception(
     assert Bookstore.DELFI.value in message
     assert "delfi.rs refused the connection" in message
     assert warnings[0].exc_info is not None
+
+
+def test_no_unreachable_notice_when_every_source_answers(client: TestClient, monkeypatch) -> None:
+    # Guard against the notice becoming unconditional: a healthy search must
+    # carry no hedge at all, or the hedge stops meaning anything.
+    _stub_store_search(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_open_library)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is None
+
+
+def test_log_names_the_exception_type_when_it_carries_no_message(
+    client: TestClient, monkeypatch, caplog
+) -> None:
+    # httpx.ConnectTimeout — the failure actually seen against Open Library —
+    # stringifies to "", so a message built only from str(exc) says nothing at
+    # all about what went wrong.
+    _stub_store_search(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    with caplog.at_level(logging.WARNING, logger=routes_search.__name__):
+        client.get("/search", params={"q": "anything"})
+
+    message = caplog.records[0].getMessage()
+    assert "ConnectTimeout" in message

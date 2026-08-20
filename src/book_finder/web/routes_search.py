@@ -34,7 +34,15 @@ async def _safe(name: str, source: Awaitable[list[dict]]) -> SourceOutcome:
     try:
         return name, await source
     except httpx.HTTPError as exc:
-        logger.warning("Search source %s is unreachable: %s", name, exc, exc_info=exc)
+        # Type first: the timeouts seen in practice stringify to "", so a
+        # message built from str(exc) alone would name no failure at all.
+        logger.warning(
+            "Search source %s is unreachable: %s %s",
+            name,
+            type(exc).__name__,
+            exc,
+            exc_info=exc,
+        )
         return name, None
 
 
