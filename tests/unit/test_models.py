@@ -5,9 +5,10 @@ def test_genre_has_exactly_nine_members() -> None:
     assert len(Genre) == 9
 
 
-def test_bookstore_has_exactly_five_members() -> None:
-    # Delfi added per ADR 0004; Booka added per ADR 0009; Čarobna knjiga added per ADR 0010.
-    assert len(Bookstore) == 5
+def test_bookstore_has_exactly_six_members() -> None:
+    # Delfi added per ADR 0004; Booka added per ADR 0009; Čarobna knjiga added
+    # per ADR 0010; Geopoetika added per ADR 0011.
+    assert len(Bookstore) == 6
 
 
 def test_edition_script_defaults_to_none() -> None:
