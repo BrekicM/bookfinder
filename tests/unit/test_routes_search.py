@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from book_finder.domain.models import Book, Bookstore
+from book_finder.i18n.strings import EN
 from book_finder.stores import registry
 from book_finder.web import routes_search
 
@@ -112,3 +113,21 @@ def test_failing_open_library_is_named_as_unreachable(client: TestClient, monkey
 
     assert _unreachable_notice(response.text) is not None
     assert routes_search.OPEN_LIBRARY_SOURCE_NAME in _unreachable_notice(response.text)
+
+
+def test_does_not_claim_no_matches_when_every_source_failed(
+    client: TestClient, monkeypatch
+) -> None:
+    # "No matches found" is a claim about the catalogues, and nothing answered,
+    # so the app is in no position to make it.
+    async def failing_search(query, http_client):
+        raise httpx.ConnectError("simulated outage")
+
+    for store_client in registry.ACTIVE_CLIENTS:
+        monkeypatch.setattr(store_client, "search_titles", failing_search)
+    monkeypatch.setattr(routes_search, "search_open_library", failing_search)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is not None
+    assert EN["no_matches"] not in response.text

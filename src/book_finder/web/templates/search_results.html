@@ -15,7 +15,8 @@
             <div class="author">{{ book.author }}</div>
         </div>
         {% endfor %}
-    {% else %}
+    {% elif not unreachable_sources %}
+        {# "no matches" is a claim about the catalogues; only make it when they all answered. #}
         <p class="status-empty">{{ t('no_matches') }}</p>
     {% endif %}
 {% endblock %}
