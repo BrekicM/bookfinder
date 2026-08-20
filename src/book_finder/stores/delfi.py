@@ -25,12 +25,22 @@ BOOK_CATEGORIES = ("Knjiga", "Strana knjiga")
 # unbalanced "(" or "/" is a parse error answered with HTTP 500 — real titles
 # carry them ("Mona Lisa Overdrive (The Neuromancer Trilogy" from Open
 # Library, omnibus editions like "A / B / C"), turning every Delfi check into
-# "check failed". The quieter half — "| ~ ? *" — answers 200 while excluding
+# "check failed". The quieter half — "| ~ ?" — answers 200 while excluding
 # the wanted book from the results, which reads as a false "Not available".
-# "&" is deliberately absent: probed in every position, it is ordinary text
-# ("Fear & Loathing in Las Vegas"). Results are matched locally afterwards,
-# so dropping the rest costs nothing.
-_QUERY_SYNTAX_CHARS = r'(){}[]"\/^|~?*'
+# All of them stand between words, so a space takes their place. "&" is
+# deliberately absent: probed in every position, it is ordinary text ("Fear &
+# Loathing in Las Vegas"). Results are matched locally afterwards, so
+# dropping the rest costs nothing.
+_QUERY_SYNTAX_CHARS = r'(){}[]"\/^|~?'
+
+# "*" is a wildcard the endpoint honours, so it has to go too, but it turns up
+# *inside* words (censored profanity), where a space would split the term into
+# two fragments that no longer match anything. It is deleted rather than
+# replaced: against a known-stocked title, keeping it and replacing it with a
+# space both lose the book, deleting it finds it. A token that was nothing but
+# "*" is emptied by that and then dropped, which is what keeps a standalone
+# wildcard — it matches the entire catalog — off the endpoint.
+_DELETED_QUERY_SYNTAX_CHARS = "*"
 
 
 # Operators that bind to the term following them. Dangling at the very end
@@ -54,6 +64,8 @@ def sanitize_query(query: str) -> str:
     """Strip the query-syntax characters Delfi's search parser chokes on."""
     for char in _QUERY_SYNTAX_CHARS:
         query = query.replace(char, " ")
+    for char in _DELETED_QUERY_SYNTAX_CHARS:
+        query = query.replace(char, "")
 
     words = (
         word.lstrip(_LEADING_OPERATOR_CHARS).rstrip(_WORD_FINAL_OPERATOR_CHARS)

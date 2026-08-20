@@ -247,6 +247,19 @@ def test_sanitize_query_drops_the_wildcard_fuzzy_and_or_operators_anywhere() -> 
     assert sanitize_query("Hobit * ilustrovano izdanje") == "Hobit ilustrovano izdanje"
 
 
+def test_sanitize_query_deletes_a_word_internal_asterisk_instead_of_splitting() -> None:
+    # "*" is the one always-stripped character that occurs *inside* words
+    # (censored-profanity titles), so replacing it with a space would split
+    # the term into two fragments that no longer match. Measured against a
+    # known-stocked title: keeping it finds nothing, replacing it with a
+    # space finds nothing, deleting it finds the book.
+    assert sanitize_query("Hobit ilust*rovano izdanje") == "Hobit ilustrovano izdanje"
+    # A token that was nothing but "*" is emptied by the deletion and then
+    # dropped, so the standalone wildcard still never reaches the endpoint —
+    # it matches the whole catalog with the wanted book nowhere in it.
+    assert sanitize_query("Hobit * izdanje") == "Hobit izdanje"
+
+
 def test_sanitize_query_keeps_an_ampersand() -> None:
     # "&" is the one character of that group that survived re-probing: it
     # returns the book in every position, so stripping it would needlessly
