@@ -19,12 +19,33 @@ SEARCH_URL = "https://delfi.rs/api/pc-frontend-api/search/quick-search-products/
 # returns real books instead. See ADR 0004's "Update" section.
 BOOK_CATEGORIES = ("Knjiga", "Strana knjiga")
 
+# Delfi's search backend feeds the query straight into a Lucene-style query
+# parser, so these grouping/quoting/regex characters are read as syntax rather
+# than as text. An unbalanced one is a parse error the endpoint answers with
+# HTTP 500 — which real titles carry ("Mona Lisa Overdrive (The Neuromancer
+# Trilogy" from Open Library, omnibus editions like "A / B / C"), turning every
+# Delfi check into "check failed". Results are matched locally afterwards, so
+# dropping the punctuation costs nothing.
+_QUERY_SYNTAX_CHARS = r'(){}[]"\/^'
+
+
+# Operators that bind to the term following them, so a query ending on one is
+# a parse error too. Mid-query they are harmless and often part of the text
+# ("Jean-Paul", "C++"), so these are only trimmed off the end.
+_TRAILING_OPERATOR_CHARS = "+-!:"
+
+
+def sanitize_query(query: str) -> str:
+    """Strip the query-syntax characters Delfi's search parser chokes on."""
+    for char in _QUERY_SYNTAX_CHARS:
+        query = query.replace(char, " ")
+    return " ".join(query.split()).rstrip(_TRAILING_OPERATOR_CHARS + " ")
+
 
 def build_search_url(query: str, category: str = "Sve kategorije") -> str:
-    # quote(..., safe="") also encodes "/", which appears in real titles
-    # (omnibus editions like "A / B / C") and would otherwise be read as
-    # extra path segments by Delfi's path-based search endpoint, 404ing.
-    return SEARCH_URL.format(category=quote(category, safe=""), query=quote(query, safe=""))
+    return SEARCH_URL.format(
+        category=quote(category, safe=""), query=quote(sanitize_query(query), safe="")
+    )
 
 
 def parse_search_results(raw_json: str) -> list[Edition]:
@@ -68,6 +89,9 @@ async def fetch_book_editions(query: str, http_client: httpx.AsyncClient) -> lis
     (mugs, stickers, plushies...) real books can be crowded out of the
     results entirely — searching the book categories directly avoids that.
     """
+    if not sanitize_query(query):
+        return []
+
     responses = await asyncio.gather(
         *(
             http_client.get(

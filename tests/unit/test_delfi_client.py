@@ -1,10 +1,11 @@
 import json
+from urllib.parse import unquote
 
 import httpx
 import pytest
 
 from book_finder.domain.models import Book
-from book_finder.stores.delfi import DelfiClient
+from book_finder.stores.delfi import DelfiClient, sanitize_query
 
 _OUT_OF_STOCK_RESPONSE = json.dumps(
     {
@@ -160,3 +161,55 @@ async def test_find_editions_dedupes_the_same_product_found_in_both_categories()
         editions = await DelfiClient().find_editions(book, http_client)
 
     assert len(editions) == 1
+
+
+@pytest.mark.asyncio
+async def test_find_editions_strips_query_syntax_characters_from_the_search_term() -> None:
+    # Delfi's search backend parses the query as Lucene-style query syntax and
+    # answers 500 when that syntax is invalid, so a real Open Library title
+    # carrying an unbalanced "(" turned every Delfi check into "check failed".
+    # The title is only ever matched locally afterwards, so the punctuation is
+    # dropped before it reaches the endpoint.
+    requested_queries: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_queries.append(unquote(str(request.url).rsplit("/", 1)[-1]))
+        return httpx.Response(200, text=_EMPTY_RESPONSE)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        book = Book(title="Mona Lisa Overdrive (The Neuromancer Trilogy", author="William Gibson")
+        await DelfiClient().find_editions(book, http_client)
+
+    assert requested_queries == ["Mona Lisa Overdrive The Neuromancer Trilogy"] * 2
+
+
+def test_sanitize_query_drops_an_operator_left_dangling_at_the_end() -> None:
+    # "-", "+", "!" and ":" are operators that bind to the term after them,
+    # so Delfi answers 500 when a query ends on one. Mid-query they are
+    # harmless, and stripping them there would cost real matches.
+    assert sanitize_query("Hobit -") == "Hobit"
+
+
+def test_sanitize_query_drops_the_boost_operator_anywhere_in_the_query() -> None:
+    # Unlike the other operators, "^" is a parse error mid-query as well
+    # (it wants a term before and a number after), so it goes entirely.
+    assert sanitize_query("Hobit ^ ilustrovano") == "Hobit ilustrovano"
+
+
+def test_sanitize_query_keeps_punctuation_inside_a_word() -> None:
+    # Over-stripping costs real hits: Delfi finds "Jean-Paul Sartre" but
+    # returns nothing for "Jean Paul Sartre".
+    assert sanitize_query("Jean-Paul Sartre") == "Jean-Paul Sartre"
+
+
+@pytest.mark.asyncio
+async def test_find_editions_skips_the_request_when_nothing_searchable_is_left() -> None:
+    # An empty query segment is a 404 from the endpoint, which would surface
+    # as "check failed" — but there is nothing to check, so it is no match.
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError(f"should not have been requested: {request.url}")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        editions = await DelfiClient().find_editions(Book(title="( )", author=""), http_client)
+
+    assert editions == []

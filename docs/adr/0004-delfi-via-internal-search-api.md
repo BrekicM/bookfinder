@@ -15,3 +15,13 @@ Probing the category segment with known Serbian category names found two that re
 ## Update: the client hierarchy was split
 
 `BookstoreClient` originally *was* the sitemap-catalog pipeline, so `DelfiClient` had to declare a `_parse_product_page()` that raised `NotImplementedError` — a method it never uses. That machinery now lives in `CatalogBookstoreClient` (Laguna, Vulkan); `BookstoreClient` declares only `find_editions()` and `search_titles()`, which `DelfiClient` implements directly. The stub is gone, and Delfi's search discovery is reachable through the same interface as every other store rather than a module-level `search_delfi_books()` wrapper.
+
+## Update: the query segment is parsed as Lucene syntax, so punctuation is stripped
+
+The endpoint doesn't treat `{query}` as literal text — it hands it to a Lucene-style query parser, and answers HTTP 500 (`SERVICE UNAVAILABLE`) whenever the result isn't valid query syntax. That is not a rare edge: the title `Mona Lisa Overdrive (The Neuromancer Trilogy` (an Open Library record with an unbalanced parenthesis) made every Delfi check fail, and omnibus titles like `A / B / C` failed too, because `/` opens a regex literal. Live probing of the endpoint sorted the characters into three groups:
+
+- **Always unsafe** — `( ) { } [ ] " \ /` (grouping, quoting, escaping, regex) and `^` (boost, which also wants a number after it). Stripped anywhere in the query.
+- **Unsafe only at the end** — `+ - ! :` bind to the term that follows them, so a query ending on one is a parse error. Trimmed off the end only: mid-word they are ordinary text, and over-stripping costs real hits (Delfi finds `Jean-Paul Sartre` but returns nothing for `Jean Paul Sartre`).
+- **Harmless** — `& | ~ * ?` returned 200 in every position probed, so they are left alone.
+
+Percent-encoding was tried first and does not help: the backend decodes the path segment before parsing it, so `%2F` still reaches the parser as `/`. The characters have to be removed, not escaped — which costs nothing, since results are matched against the Book locally afterwards (`matches_book` / `matches_query`), not by the endpoint's own relevance. A query left empty by stripping skips the request entirely rather than sending a bare path segment, which is a 404 and would otherwise surface as a failed check (ADR 0005) when there was nothing to check.
