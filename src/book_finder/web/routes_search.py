@@ -76,17 +76,20 @@ async def search(
 
     resolution = resolve(combined)
 
-    if resolution.kind == "single":
-        book = resolution.book
-        query_string = urlencode({"title": book.title, "author": book.author})
-        return RedirectResponse(url=f"/books?{query_string}")
+    candidates = resolution.candidates
+    book = resolution.book
+    if resolution.kind == "single" and book is not None:
+        if not unreachable_sources:
+            query_string = urlencode({"title": book.title, "author": book.author})
+            return RedirectResponse(url=f"/books?{query_string}")
+        candidates = [book]
 
     return render(
         request,
         "search_results.html",
         {
             "query": q,
-            "candidates": resolution.candidates,
+            "candidates": candidates,
             "unreachable_sources": unreachable_sources,
         },
     )

@@ -8,7 +8,7 @@
     {% endif %}
 
     {% if candidates %}
-        <p>{{ t('multiple_matches') }}</p>
+        {% if candidates | length > 1 %}<p>{{ t('multiple_matches') }}</p>{% endif %}
         {% for book in candidates %}
         <div class="card candidate">
             <a href="/books?title={{ book.title | urlencode }}&author={{ book.author | urlencode }}">{{ book.title }}</a>

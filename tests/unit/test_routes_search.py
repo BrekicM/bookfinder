@@ -207,3 +207,66 @@ def test_log_names_the_exception_type_when_it_carries_no_message(
 
     message = caplog.records[0].getMessage()
     assert "ConnectTimeout" in message
+
+
+# Test list — a single match must not be auto-selected on partial data:
+# - one distinct candidate plus an unreachable source: the results page, not a redirect
+# - one distinct candidate with every source answering: still redirects to /books
+
+_SINGLE_MATCH_TITLE = "The Only Match"
+_SINGLE_MATCH_AUTHOR = "Sole Author"
+
+
+def _stub_single_match(monkeypatch) -> None:
+    """Make the whole fan-out yield exactly one distinct book."""
+
+    async def no_results(query, http_client) -> list[Book]:
+        return []
+
+    for store_client in registry.ACTIVE_CLIENTS:
+        monkeypatch.setattr(store_client, "search_titles", no_results)
+
+    async def one_result(query, http_client) -> list[Book]:
+        return [Book(title=_SINGLE_MATCH_TITLE, author=_SINGLE_MATCH_AUTHOR)]
+
+    monkeypatch.setattr(registry._delfi, "search_titles", one_result)
+
+
+async def _stub_empty_open_library(query, http_client) -> list[dict]:
+    return []
+
+
+def test_single_match_is_not_auto_selected_when_a_source_is_unreachable(
+    client: TestClient, monkeypatch
+) -> None:
+    # Redirecting to the book page asserts "this is the book you meant". With a
+    # source never consulted that claim is no safer than "no matches" — the one
+    # candidate is shown alongside the notice so the user decides.
+    _stub_single_match(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("simulated Open Library outage")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    response = client.get("/search", params={"q": "anything"}, follow_redirects=False)
+
+    assert response.status_code == 200
+    notice = _unreachable_notice(response.text)
+    assert notice is not None
+    assert routes_search.OPEN_LIBRARY_SOURCE_NAME in notice
+    assert _SINGLE_MATCH_TITLE in response.text
+    assert EN["no_matches"] not in response.text
+    assert EN["multiple_matches"] not in response.text
+
+
+def test_single_match_still_redirects_when_every_source_answers(
+    client: TestClient, monkeypatch
+) -> None:
+    _stub_single_match(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_empty_open_library)
+
+    response = client.get("/search", params={"q": "anything"}, follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/books?title=The+Only+Match&author=Sole+Author"
