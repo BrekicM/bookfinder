@@ -2,6 +2,7 @@ from book_finder.stores.base import BookstoreClient, CatalogBookstoreClient
 from book_finder.stores.booka import BookaClient
 from book_finder.stores.carobna_knjiga import CarobnaKnjigaClient
 from book_finder.stores.delfi import DelfiClient
+from book_finder.stores.geopoetika import GeopoetikaClient
 from book_finder.stores.registry import ACTIVE_CLIENTS
 
 
@@ -11,6 +12,12 @@ def test_booka_is_an_active_client() -> None:
 
 def test_carobna_knjiga_is_an_active_catalog_client() -> None:
     matches = [client for client in ACTIVE_CLIENTS if isinstance(client, CarobnaKnjigaClient)]
+    assert len(matches) == 1
+    assert isinstance(matches[0], CatalogBookstoreClient)
+
+
+def test_geopoetika_is_an_active_catalog_client() -> None:
+    matches = [client for client in ACTIVE_CLIENTS if isinstance(client, GeopoetikaClient)]
     assert len(matches) == 1
     assert isinstance(matches[0], CatalogBookstoreClient)
 

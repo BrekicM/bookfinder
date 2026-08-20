@@ -13,7 +13,7 @@ A specific listing of a Book at one Bookstore — carries its own price, languag
 _Avoid_: Listing, Product, Copy
 
 **Bookstore**:
-One of the Serbian retailers the app checks for Editions: Laguna, Vulkan, Delfi, Booka, Čarobna knjiga (see ADR 0004 — Delfi was briefly deferred by ADR 0003, then added once a real search API was found; see ADR 0009 for Booka; see ADR 0010 for Čarobna knjiga, whose catalog is books-only — comics and manga on that site are out of scope). Dereta was evaluated and excluded — see ADR 0008.
+One of the Serbian retailers the app checks for Editions: Laguna, Vulkan, Delfi, Booka, Čarobna knjiga, Geopoetika (see ADR 0004 — Delfi was briefly deferred by ADR 0003, then added once a real search API was found; see ADR 0009 for Booka; see ADR 0010 for Čarobna knjiga, whose catalog is books-only — comics and manga on that site are out of scope; see ADR 0011 for Geopoetika, whose catalog is physical books only — its separate ebook app is out of scope). Dereta was evaluated and excluded — see ADR 0008.
 _Avoid_: Store, Retailer, Shop
 
 **Popularity**:
