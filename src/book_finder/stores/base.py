@@ -141,6 +141,19 @@ class CatalogBookstoreClient(BookstoreClient):
     @abstractmethod
     def _parse_product_page(self, html: str) -> Edition | None: ...
 
+    async def _fetch_catalog_urls(self, http_client: httpx.AsyncClient) -> list[str]:
+        """Fetch this store's catalog of product URLs, uncached.
+
+        Default: fetch self.sitemap_url and parse it as a sitemap, filtered by
+        _is_book_url. Override for stores whose catalog isn't a sitemap (e.g.
+        a paginated HTML listing) — see CarobnaKnjigaClient.
+        """
+        response = await http_client.get(
+            self.sitemap_url, timeout=settings.store_request_timeout_seconds
+        )
+        response.raise_for_status()
+        return [url for url in parse_sitemap_urls(response.text) if self._is_book_url(url)]
+
     async def _get_catalog(self, http_client: httpx.AsyncClient) -> list[str]:
         max_age = timedelta(hours=settings.catalog_cache_ttl_hours)
         cached = read_cache(settings.cache_dir, self.cache_key, max_age=max_age)
@@ -148,10 +161,7 @@ class CatalogBookstoreClient(BookstoreClient):
             return cached
 
         try:
-            response = await http_client.get(
-                self.sitemap_url, timeout=settings.store_request_timeout_seconds
-            )
-            response.raise_for_status()
+            urls = await self._fetch_catalog_urls(http_client)
         except httpx.HTTPError:
             # Degrade gracefully only if we have something to degrade to — a
             # total failure with no stale fallback must propagate, or the
@@ -161,7 +171,6 @@ class CatalogBookstoreClient(BookstoreClient):
                 return stale
             raise
 
-        urls = [url for url in parse_sitemap_urls(response.text) if self._is_book_url(url)]
         write_cache(settings.cache_dir, self.cache_key, urls)
         return urls
 
