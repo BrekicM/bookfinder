@@ -185,9 +185,29 @@ async def test_find_editions_strips_query_syntax_characters_from_the_search_term
 
 def test_sanitize_query_drops_an_operator_left_dangling_at_the_end() -> None:
     # "-", "+", "!" and ":" are operators that bind to the term after them,
-    # so Delfi answers 500 when a query ends on one. Mid-query they are
-    # harmless, and stripping them there would cost real matches.
+    # so Delfi answers 500 on a query ending in a bare operator token.
     assert sanitize_query("Hobit -") == "Hobit"
+
+
+def test_sanitize_query_is_empty_when_only_operator_tokens_remain() -> None:
+    # Nothing searchable is left, so the caller skips the request entirely
+    # rather than sending a path segment the endpoint answers 404 for.
+    assert sanitize_query("++") == ""
+
+
+def test_sanitize_query_keeps_a_trailing_dash_or_plus_attached_to_a_word() -> None:
+    # Word-attached "-" and "+" return 200 from Delfi, and stripping them
+    # costs real hits: "C++" finds 15 products, "C" finds none.
+    assert sanitize_query("C++") == "C++"
+    assert sanitize_query("Programiranje u C++") == "Programiranje u C++"
+
+
+def test_sanitize_query_drops_a_trailing_colon_or_bang_attached_to_a_word() -> None:
+    # Unlike "-" and "+", word-attached ":" and "!" are parse errors at the
+    # end of the query ("Hobit:" and "Hobit!" both answer 500), and titles
+    # ending in "!" are common in Serbian.
+    assert sanitize_query("Ne odustaj!") == "Ne odustaj"
+    assert sanitize_query("Upozorenje:") == "Upozorenje"
 
 
 def test_sanitize_query_drops_the_boost_operator_anywhere_in_the_query() -> None:

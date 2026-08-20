@@ -29,17 +29,29 @@ BOOK_CATEGORIES = ("Knjiga", "Strana knjiga")
 _QUERY_SYNTAX_CHARS = r'(){}[]"\/^'
 
 
-# Operators that bind to the term following them, so a query ending on one is
-# a parse error too. Mid-query they are harmless and often part of the text
-# ("Jean-Paul", "C++"), so these are only trimmed off the end.
-_TRAILING_OPERATOR_CHARS = "+-!:"
+# Operators that bind to the term following them, so a token made of nothing
+# but these ("Hobit -") leaves the query dangling on an operator — a parse
+# error. Attached to a word they are ordinary text ("Jean-Paul", "C++").
+_OPERATOR_CHARS = "+-!:"
+
+# ...except at the very end of the query, where these two are a parse error
+# even when attached to a word ("Hobit:" and "Hobit!" both answer 500, and
+# titles ending in "!" are common). "-" and "+" there are fine, and dropping
+# them costs real hits, so the trim is per character rather than blanket.
+_WORD_FINAL_OPERATOR_CHARS = ":!"
 
 
 def sanitize_query(query: str) -> str:
     """Strip the query-syntax characters Delfi's search parser chokes on."""
     for char in _QUERY_SYNTAX_CHARS:
         query = query.replace(char, " ")
-    return " ".join(query.split()).rstrip(_TRAILING_OPERATOR_CHARS + " ")
+
+    words = query.split()
+    while words and not words[-1].strip(_OPERATOR_CHARS):
+        words.pop()
+    if words:
+        words[-1] = words[-1].rstrip(_WORD_FINAL_OPERATOR_CHARS)
+    return " ".join(words)
 
 
 def build_search_url(query: str, category: str = "Sve kategorije") -> str:
@@ -89,13 +101,14 @@ async def fetch_book_editions(query: str, http_client: httpx.AsyncClient) -> lis
     (mugs, stickers, plushies...) real books can be crowded out of the
     results entirely — searching the book categories directly avoids that.
     """
-    if not sanitize_query(query):
+    sanitized_query = sanitize_query(query)
+    if not sanitized_query:
         return []
 
     responses = await asyncio.gather(
         *(
             http_client.get(
-                build_search_url(query, category=category),
+                build_search_url(sanitized_query, category=category),
                 timeout=settings.store_request_timeout_seconds,
             )
             for category in BOOK_CATEGORIES

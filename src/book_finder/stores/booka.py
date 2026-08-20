@@ -21,8 +21,8 @@ _SCRIPT_LABELS = {"latinica": "Latin", "ćirilica": "Cyrillic", "cirilica": "Cyr
 
 
 def build_search_url(query: str) -> str:
-    # quote(..., safe="") also encodes "/", matching Delfi's handling of
-    # titles containing slashes (omnibus editions).
+    # quote(..., safe="") also encodes "/", so a title containing slashes
+    # (omnibus editions) stays one query-string value.
     return SEARCH_URL.format(query=quote(query, safe=""))
 
 
