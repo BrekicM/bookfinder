@@ -2,7 +2,7 @@
 
 Finds the most popular books by genre and checks live in-stock availability,
 price, and edition language across Serbian bookstores (Laguna, Vulkan, Delfi,
-Booka, Čarobna knjiga, Geopoetika).
+Booka, Čarobna knjiga, Geopoetika, Agora).
 
 See [CONTEXT.md](CONTEXT.md) for the domain model and [docs/adr/](docs/adr/)
 for the key design decisions.
@@ -11,11 +11,11 @@ for the key design decisions.
 
 MVP complete: browse the 9 fixed genres (Global popularity via Open Library,
 Serbian bestseller data via Laguna + Vulkan where available), free-text
-search with disambiguation (merging Open Library with all six bookstores'
+search with disambiguation (merging Open Library with all seven bookstores'
 own catalogs, so domestic-only titles are still findable), and live per-book
-availability/price/language checks across all six stores (see ADR 0004 for
+availability/price/language checks across all seven stores (see ADR 0004 for
 how Delfi was added post-MVP, ADR 0009 for Booka, ADR 0010 for Čarobna
-knjiga, and ADR 0011 for Geopoetika). A wishlist lets you
+knjiga, ADR 0011 for Geopoetika, and ADR 0012 for Agora). A wishlist lets you
 save book titles/authors locally and revisit them later. The UI is a
 book-themed, mobile-friendly design with light/dark mode.
 
@@ -82,7 +82,7 @@ Ctrl+C.
 - **Search** — type a title or author; if there's more than one match,
   you'll be asked to pick the right one.
 - **Check a book** — its page shows live availability, price, language, and
-  format at each of the six stores, with a link to buy.
+  format at each of the seven stores, with a link to buy.
 - **Wishlist** — click "Add to Wishlist" on a book's page to save it; find
   it again anytime from the Wishlist link in the nav.
 - **Language** — switch the UI between English, Serbian (Latin), and Serbian
