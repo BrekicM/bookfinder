@@ -13,7 +13,7 @@ A specific listing of a Book at one Bookstore — carries its own price, languag
 _Avoid_: Listing, Product, Copy
 
 **Bookstore**:
-One of the Serbian retailers the app checks for Editions: Laguna, Vulkan, Delfi, Booka, Čarobna knjiga, Geopoetika (see ADR 0004 — Delfi was briefly deferred by ADR 0003, then added once a real search API was found; see ADR 0009 for Booka; see ADR 0010 for Čarobna knjiga, whose catalog is books-only — comics and manga on that site are out of scope; see ADR 0011 for Geopoetika, whose catalog is physical books only — its separate ebook app is out of scope). Dereta was evaluated and excluded — see ADR 0008.
+One of the Serbian retailers the app checks for Editions: Laguna, Vulkan, Delfi, Booka, Čarobna knjiga, Geopoetika, Agora (see ADR 0004 — Delfi was briefly deferred by ADR 0003, then added once a real search API was found; see ADR 0009 for Booka; see ADR 0010 for Čarobna knjiga, whose catalog is books-only — comics and manga on that site are out of scope; see ADR 0011 for Geopoetika, whose catalog is physical books only — its separate ebook app is out of scope; see ADR 0012 for Agora, whose author and Script data are parsed from the product title/description text rather than a structured field). Dereta was evaluated and excluded — see ADR 0008.
 _Avoid_: Store, Retailer, Shop
 
 **Popularity**:
@@ -45,5 +45,5 @@ A possible Book match surfaced by a Search before the user has picked one to che
 _Avoid_: Result, Match, Hit (used informally elsewhere; "Candidate" is the pre-disambiguation domain term)
 
 **Script**:
-Whether a physical Edition is printed in Latin or Cyrillic characters — a property of that one Edition, not of the Book, and independent of the Edition's Language (a Serbian-language edition can be printed in either script). Currently only Booka publishes this per-Edition; other Bookstores leave it unknown rather than guessed.
+Whether a physical Edition is printed in Latin or Cyrillic characters — a property of that one Edition, not of the Book, and independent of the Edition's Language (a Serbian-language edition can be printed in either script). Currently only Booka and Agora publish this per-Edition (see ADR 0012); other Bookstores leave it unknown rather than guessed.
 _Avoid_: Alphabet (Script is the established Serbian-context term); do not confuse with Language, which is the UI's own display language and unrelated to how a printed book is set

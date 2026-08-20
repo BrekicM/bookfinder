@@ -39,6 +39,7 @@ class Bookstore(str, Enum):
     BOOKA = "Booka"
     CAROBNA_KNJIGA = "Čarobna knjiga"
     GEOPOETIKA = "Geopoetika"
+    AGORA = "Agora"
 
 
 class Availability(str, Enum):
