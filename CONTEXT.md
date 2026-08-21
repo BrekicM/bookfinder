@@ -37,7 +37,7 @@ A persisted set of Books the user has saved to look up again later, identified t
 _Avoid_: Favorites, Saved, Cart (there's no purchase flow — this app only checks availability elsewhere)
 
 **Search**:
-A free-text query (e.g. "Witcher") the user runs to find a Book, independent of the curated Genre list. Matched against each Bookstore's own search/catalog and against Open Library (used only as a supplementary identity source — it is not a Bookstore and carries no Availability). A Search either resolves straight to one Book, or surfaces multiple Candidates for the user to disambiguate.
+A free-text query (e.g. "Witcher") the user runs to find a Book, independent of the curated Genre list. Matched against each Bookstore's own search/catalog and against Open Library (used only as a supplementary identity source — it is not a Bookstore and carries no Availability). A Search either resolves straight to one Book, or surfaces multiple Candidates for the user to disambiguate. A source that fails to answer is a third outcome, distinct from that source finding nothing: the Search is then partial, so the results page names the unreachable sources, never auto-resolves to a single Book, and never claims there are no matches (see ADR 0013).
 _Avoid_: Lookup, Query (used loosely elsewhere; "Search" is the user-facing free-text action)
 
 **Candidate**:

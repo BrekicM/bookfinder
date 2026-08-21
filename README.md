@@ -80,7 +80,9 @@ Ctrl+C.
 - **Browse** — pick a genre from the home page to see Global and Serbian
   popularity lists.
 - **Search** — type a title or author; if there's more than one match,
-  you'll be asked to pick the right one.
+  you'll be asked to pick the right one. If a store or Open Library
+  can't be reached, the page names it instead of passing off a partial
+  list as the whole answer.
 - **Check a book** — its page shows live availability, price, language, and
   format at each of the seven stores, with a link to buy.
 - **Wishlist** — click "Add to Wishlist" on a book's page to save it; find

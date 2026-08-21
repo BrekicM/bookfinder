@@ -3,15 +3,20 @@
 {% block content %}
     <h1>{{ t('search_results_heading', query) }}</h1>
 
+    {% if unreachable_sources %}
+        <p class="status-failed">{{ t('sources_unavailable', unreachable_sources | join(', ')) }}</p>
+    {% endif %}
+
     {% if candidates %}
-        <p>{{ t('multiple_matches') }}</p>
+        {% if candidates | length > 1 %}<p>{{ t('multiple_matches') }}</p>{% endif %}
         {% for book in candidates %}
         <div class="card candidate">
             <a href="/books?title={{ book.title | urlencode }}&author={{ book.author | urlencode }}">{{ book.title }}</a>
             <div class="author">{{ book.author }}</div>
         </div>
         {% endfor %}
-    {% else %}
+    {% elif not unreachable_sources %}
+        {# "no matches" is a claim about the catalogues; only make it when they all answered. #}
         <p class="status-empty">{{ t('no_matches') }}</p>
     {% endif %}
 {% endblock %}

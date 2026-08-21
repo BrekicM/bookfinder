@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import Awaitable
 from typing import Annotated
 from urllib.parse import urlencode
@@ -15,25 +16,42 @@ from book_finder.stores.registry import ACTIVE_CLIENTS
 from book_finder.web.http_client import get_http_client
 from book_finder.web.render import render
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
+OPEN_LIBRARY_SOURCE_NAME = "Open Library"
 
-async def _safe(source: Awaitable[list[dict]]) -> list[dict]:
+# A source that failed and one that genuinely found nothing both contribute
+# zero results, so the merged list alone cannot tell them apart. Carrying the
+# source name alongside a None-on-failure result keeps that distinction, which
+# is what lets the page admit the answer is partial instead of presenting a
+# short list (or "no matches") as if it were the whole catalogue.
+SourceOutcome = tuple[str, list[dict] | None]
+
+
+async def _safe(name: str, source: Awaitable[list[dict]]) -> SourceOutcome:
     try:
-        return await source
-    except httpx.HTTPError:
-        return []
+        return name, await source
+    except httpx.HTTPError as exc:
+        # Type first: the timeouts seen in practice stringify to "", so a
+        # message built from str(exc) alone would name no failure at all.
+        logger.warning(
+            "Search source %s is unreachable: %s %s",
+            name,
+            type(exc).__name__,
+            exc,
+            exc_info=exc,
+        )
+        return name, None
 
 
 async def _safe_store_search(
     client: BookstoreClient, query: str, http_client: httpx.AsyncClient
-) -> list[dict]:
+) -> SourceOutcome:
     """search_titles() wrapped so one store's failure never blanks the search."""
-    try:
-        books = await client.search_titles(query, http_client)
-    except httpx.HTTPError:
-        return []
-    return books_to_search_dicts(books)
+    name, books = await _safe(client.bookstore, client.search_titles(query, http_client))
+    return name, None if books is None else books_to_search_dicts(books)
 
 
 @router.get("/search", response_model=None)
@@ -42,26 +60,36 @@ async def search(
     q: str,
     http_client: Annotated[httpx.AsyncClient, Depends(get_http_client)],
 ) -> HTMLResponse | RedirectResponse:
-    results = await asyncio.gather(
+    outcomes = await asyncio.gather(
         *(_safe_store_search(client, q, http_client) for client in ACTIVE_CLIENTS),
-        _safe(search_open_library(q, http_client)),
+        _safe(OPEN_LIBRARY_SOURCE_NAME, search_open_library(q, http_client)),
     )
 
     # Store-native results (purchasable in Serbia, this app's core purpose)
     # go first so they survive resolve()'s MAX_CANDIDATES truncation — Open
     # Library alone can return more than that for an internationally popular
     # title, in editions/translations that aren't actually buyable here.
-    combined = [result for source_results in results for result in source_results]
+    combined = [
+        result for _, source_results in outcomes if source_results for result in source_results
+    ]
+    unreachable_sources = [name for name, source_results in outcomes if source_results is None]
 
     resolution = resolve(combined)
 
-    if resolution.kind == "single":
-        book = resolution.book
-        query_string = urlencode({"title": book.title, "author": book.author})
-        return RedirectResponse(url=f"/books?{query_string}")
+    candidates = resolution.candidates
+    book = resolution.book
+    if resolution.kind == "single" and book is not None:
+        if not unreachable_sources:
+            query_string = urlencode({"title": book.title, "author": book.author})
+            return RedirectResponse(url=f"/books?{query_string}")
+        candidates = [book]
 
     return render(
         request,
         "search_results.html",
-        {"query": q, "candidates": resolution.candidates},
+        {
+            "query": q,
+            "candidates": candidates,
+            "unreachable_sources": unreachable_sources,
+        },
     )

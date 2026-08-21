@@ -1,8 +1,12 @@
+import logging
+import re
+
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from book_finder.domain.models import Book
+from book_finder.domain.models import Book, Bookstore
+from book_finder.i18n.strings import EN
 from book_finder.stores import registry
 from book_finder.web import routes_search
 
@@ -68,3 +72,201 @@ def test_one_store_failing_does_not_blank_the_whole_search(
         if store_client.bookstore == failing_bookstore:
             continue
         assert f"{store_client.bookstore} Store Title" in response.text
+
+
+# Test list — surfacing sources that failed rather than silently shrinking results:
+# - a failing store is named in the response as unreachable
+# - a failing Open Library is named as "Open Library"
+# - all sources healthy: no unreachable notice at all
+# - every source failing: the notice appears instead of a bare "no matches"
+# - each failure is logged with its exception
+
+
+def _unreachable_notice(html: str) -> str | None:
+    match = re.search(r'<p class="status-failed">(.*?)</p>', html, re.DOTALL)
+    return match.group(1).strip() if match else None
+
+
+def test_failing_store_is_named_as_unreachable(client: TestClient, monkeypatch) -> None:
+    _stub_store_search(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_open_library)
+
+    async def failing_search(query, http_client):
+        raise httpx.ConnectError("simulated store outage")
+
+    monkeypatch.setattr(registry._delfi, "search_titles", failing_search)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is not None
+    assert Bookstore.DELFI.value in _unreachable_notice(response.text)
+
+
+def test_failing_open_library_is_named_as_unreachable(client: TestClient, monkeypatch) -> None:
+    _stub_store_search(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("simulated Open Library outage")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is not None
+    assert routes_search.OPEN_LIBRARY_SOURCE_NAME in _unreachable_notice(response.text)
+
+
+def test_does_not_claim_no_matches_when_every_source_failed(
+    client: TestClient, monkeypatch
+) -> None:
+    # "No matches found" is a claim about the catalogues, and nothing answered,
+    # so the app is in no position to make it.
+    async def failing_search(query, http_client):
+        raise httpx.ConnectError("simulated outage")
+
+    for store_client in registry.ACTIVE_CLIENTS:
+        monkeypatch.setattr(store_client, "search_titles", failing_search)
+    monkeypatch.setattr(routes_search, "search_open_library", failing_search)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is not None
+    assert EN["no_matches"] not in response.text
+
+
+def test_source_failure_is_logged_with_its_exception(
+    client: TestClient, monkeypatch, caplog
+) -> None:
+    # The notice tells the user a source is down; the log is what tells us why.
+    _stub_store_search(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("openlibrary.org did not answer")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    with caplog.at_level(logging.WARNING, logger=routes_search.__name__):
+        client.get("/search", params={"q": "anything"})
+
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    message = warnings[0].getMessage()
+    assert routes_search.OPEN_LIBRARY_SOURCE_NAME in message
+    assert "openlibrary.org did not answer" in message
+    assert warnings[0].exc_info is not None
+
+
+def test_store_failure_is_logged_with_its_exception(
+    client: TestClient, monkeypatch, caplog
+) -> None:
+    _stub_store_search(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_open_library)
+
+    async def failing_search(query, http_client):
+        raise httpx.ConnectError("delfi.rs refused the connection")
+
+    monkeypatch.setattr(registry._delfi, "search_titles", failing_search)
+
+    with caplog.at_level(logging.WARNING, logger=routes_search.__name__):
+        client.get("/search", params={"q": "anything"})
+
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    message = warnings[0].getMessage()
+    assert Bookstore.DELFI.value in message
+    assert "delfi.rs refused the connection" in message
+    assert warnings[0].exc_info is not None
+
+
+def test_no_unreachable_notice_when_every_source_answers(client: TestClient, monkeypatch) -> None:
+    # Guard against the notice becoming unconditional: a healthy search must
+    # carry no hedge at all, or the hedge stops meaning anything.
+    _stub_store_search(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_open_library)
+
+    response = client.get("/search", params={"q": "anything"})
+
+    assert _unreachable_notice(response.text) is None
+
+
+def test_log_names_the_exception_type_when_it_carries_no_message(
+    client: TestClient, monkeypatch, caplog
+) -> None:
+    # httpx.ConnectTimeout — the failure actually seen against Open Library —
+    # stringifies to "", so a message built only from str(exc) says nothing at
+    # all about what went wrong.
+    _stub_store_search(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    with caplog.at_level(logging.WARNING, logger=routes_search.__name__):
+        client.get("/search", params={"q": "anything"})
+
+    message = caplog.records[0].getMessage()
+    assert "ConnectTimeout" in message
+
+
+# Test list — a single match must not be auto-selected on partial data:
+# - one distinct candidate plus an unreachable source: the results page, not a redirect
+# - one distinct candidate with every source answering: still redirects to /books
+
+_SINGLE_MATCH_TITLE = "The Only Match"
+_SINGLE_MATCH_AUTHOR = "Sole Author"
+
+
+def _stub_single_match(monkeypatch) -> None:
+    """Make the whole fan-out yield exactly one distinct book."""
+
+    async def no_results(query, http_client) -> list[Book]:
+        return []
+
+    for store_client in registry.ACTIVE_CLIENTS:
+        monkeypatch.setattr(store_client, "search_titles", no_results)
+
+    async def one_result(query, http_client) -> list[Book]:
+        return [Book(title=_SINGLE_MATCH_TITLE, author=_SINGLE_MATCH_AUTHOR)]
+
+    monkeypatch.setattr(registry._delfi, "search_titles", one_result)
+
+
+async def _stub_empty_open_library(query, http_client) -> list[dict]:
+    return []
+
+
+def test_single_match_is_not_auto_selected_when_a_source_is_unreachable(
+    client: TestClient, monkeypatch
+) -> None:
+    # Redirecting to the book page asserts "this is the book you meant". With a
+    # source never consulted that claim is no safer than "no matches" — the one
+    # candidate is shown alongside the notice so the user decides.
+    _stub_single_match(monkeypatch)
+
+    async def failing_open_library(query, http_client):
+        raise httpx.ConnectTimeout("simulated Open Library outage")
+
+    monkeypatch.setattr(routes_search, "search_open_library", failing_open_library)
+
+    response = client.get("/search", params={"q": "anything"}, follow_redirects=False)
+
+    assert response.status_code == 200
+    notice = _unreachable_notice(response.text)
+    assert notice is not None
+    assert routes_search.OPEN_LIBRARY_SOURCE_NAME in notice
+    assert _SINGLE_MATCH_TITLE in response.text
+    assert EN["no_matches"] not in response.text
+    assert EN["multiple_matches"] not in response.text
+
+
+def test_single_match_still_redirects_when_every_source_answers(
+    client: TestClient, monkeypatch
+) -> None:
+    _stub_single_match(monkeypatch)
+    monkeypatch.setattr(routes_search, "search_open_library", _stub_empty_open_library)
+
+    response = client.get("/search", params={"q": "anything"}, follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/books?title=The+Only+Match&author=Sole+Author"
